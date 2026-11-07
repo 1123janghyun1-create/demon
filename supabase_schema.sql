@@ -44,6 +44,7 @@ create table if not exists public.builders (
   tags text[] default array['개발자', 'SaaS']::text[],
   followers_count integer default 0,
   following_count integer default 0,
+  website text,
   github text,
   twitter text,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null

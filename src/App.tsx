@@ -14,6 +14,7 @@ import { ProfileEditModal } from './components/ProfileEditModal';
 import { LoginModal } from './components/LoginModal';
 import { LegalModals, LegalModalType } from './components/LegalModals';
 import { Toast } from './components/Toast';
+import { SeoStructuredData } from './components/SeoStructuredData';
 
 export const AppContent: React.FC = () => {
   const {
@@ -133,6 +134,9 @@ export const AppContent: React.FC = () => {
 
       {/* Floating Toast Notification */}
       <Toast />
+
+      {/* Googlebot & SEO Structured Data (JSON-LD) */}
+      <SeoStructuredData />
     </div>
   );
 };

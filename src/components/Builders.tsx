@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Users, UserPlus, UserCheck, MessageSquare, Search, Hammer, Edit3, LogIn, Sparkles, ExternalLink } from 'lucide-react';
+import { Users, UserPlus, UserCheck, MessageSquare, Search, Hammer, Edit3, LogIn, Sparkles, ExternalLink, Globe } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { Builder } from '../types';
 
@@ -141,7 +141,8 @@ export const Builders: React.FC = () => {
                       <div className="relative shrink-0">
                         <img
                           src={builder.avatar}
-                          alt={builder.name}
+                          alt={`${builder.name} 빌더 프로필`}
+                          loading="lazy"
                           className="w-12 h-12 rounded-full object-cover ring-2 ring-border"
                         />
                         {builder.online && (
@@ -159,9 +160,45 @@ export const Builders: React.FC = () => {
                             </span>
                           )}
                         </div>
-                        <span className="text-[11px] font-semibold text-accent">
+                        <span className="text-[11px] font-semibold text-accent block">
                           {builder.role}
                         </span>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          {builder.website && (
+                            <a
+                              href={builder.website.startsWith('http') ? builder.website : `https://${builder.website}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[11px] text-fg-muted hover:text-accent font-medium transition-colors"
+                              title={`개인 웹사이트: ${builder.website}`}
+                            >
+                              <Globe className="w-3 h-3 text-accent shrink-0" />
+                              <span className="truncate max-w-[110px]">{builder.website.replace(/^https?:\/\//, '')}</span>
+                            </a>
+                          )}
+                          {builder.github && (
+                            <a
+                              href={builder.github.startsWith('http') ? builder.github : `https://${builder.github}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-0.5 text-[10px] text-fg-muted hover:text-accent font-medium transition-colors"
+                              title="GitHub 프로필"
+                            >
+                              <span>GH</span>
+                            </a>
+                          )}
+                          {builder.twitter && (
+                            <a
+                              href={builder.twitter.startsWith('http') ? builder.twitter : `https://${builder.twitter}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-0.5 text-[10px] text-fg-muted hover:text-accent font-medium transition-colors"
+                              title="X/Twitter 프로필"
+                            >
+                              <span>X</span>
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </div>
 

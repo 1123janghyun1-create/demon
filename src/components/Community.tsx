@@ -170,7 +170,26 @@ export const Community: React.FC = () => {
 
       {/* Post List */}
       <div className="flex flex-col gap-3.5">
-        {sortedPosts.map((post) => (
+        {sortedPosts.length === 0 ? (
+          <div className="rounded-card border border-border bg-surface p-10 text-center flex flex-col items-center justify-center">
+            <div className="w-14 h-14 rounded-full bg-surface-2 border border-border flex items-center justify-center mb-3">
+              <MessageSquare className="w-6 h-6 text-fg-muted" />
+            </div>
+            <h3 className="text-sm font-bold text-fg mb-1">아직 등록된 게시글이 없습니다</h3>
+            <p className="text-xs text-fg-muted mb-4 max-w-xs">
+              만들고 있는 사이드 프로젝트, 질문, 팁을 자유롭게 나눠보세요!
+            </p>
+            <button
+              onClick={() => {
+                requireAuth(() => setShowEditor(true), '글을 작성하려면 로그인이 필요합니다.');
+              }}
+              className="px-4 py-2 rounded-btn bg-accent text-white text-xs font-bold hover:bg-accent-hover transition-colors cursor-pointer"
+            >
+              첫 번째 글 작성하기
+            </button>
+          </div>
+        ) : (
+          sortedPosts.map((post) => (
           <div
             key={post.id}
             className="rounded-card border border-border bg-surface p-5 shadow-card transition-colors hover:border-border-strong"
@@ -238,7 +257,8 @@ export const Community: React.FC = () => {
               </button>
             </div>
           </div>
-        ))}
+        ))
+        )}
       </div>
     </div>
   );

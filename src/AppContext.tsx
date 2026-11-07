@@ -13,6 +13,7 @@ import {
   fetchCommunityPostsFromDB,
   insertCommunityPostToDB,
 } from './lib/database';
+import { pingSearchEngines } from './lib/seoPinger';
 
 interface AppContextType {
   products: Product[];
@@ -100,7 +101,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>(() => {
     const saved = localStorage.getItem('demon_community');
-    return saved ? JSON.parse(saved) : (initialCommunity as CommunityPost[]);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(
+            (p: any) =>
+              p.id !== 'c-welcome' &&
+              !p.title?.includes('환영합니다') &&
+              !p.title?.includes('demon')
+          );
+        }
+      } catch {}
+    }
+    return [];
   });
 
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>(() => {
@@ -133,6 +147,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSort, setFilterSort] = useState<FilterSort>('newest');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3500);
+  }, []);
+
+  // Googlebot & Deep-linking URL Sync (Hash & Query Params)
+  const handleSetCurrentTab = useCallback((tab: NavTab) => {
+    setCurrentTab(tab);
+    try {
+      if (window.location.hash !== `#${tab}`) {
+        window.history.replaceState(null, '', `#${tab}`);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash.replace(/^#/, '');
+      const validTabs: NavTab[] = ['test', 'builders', 'leaderboard', 'submit', 'community', 'about'];
+      if (validTabs.includes(hash as NavTab)) {
+        setCurrentTab(hash as NavTab);
+      }
+    };
+
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
+
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const prodParam = params.get('product');
+      if (prodParam && products.length > 0) {
+        const found = products.find((p) => p.id === prodParam || p.slug === prodParam);
+        if (found) {
+          setSelectedProduct(found);
+        }
+      }
+      const builderParam = params.get('builder');
+      if (builderParam) {
+        setCurrentTab('builders');
+      }
+    } catch {}
+  }, [products]);
+
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      if (selectedProduct) {
+        url.searchParams.set('product', selectedProduct.id);
+      } else {
+        url.searchParams.delete('product');
+      }
+      window.history.replaceState(null, '', url.toString());
+    } catch {}
+  }, [selectedProduct]);
 
   // Sync Supabase Database to Local State on App Startup
   useEffect(() => {
@@ -186,6 +260,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           bio: currentUser.bio || updatedList[idx].bio || '새로운 가치를 코딩하는 메이커입니다.',
           buildingApp: currentUser.buildingApp || updatedList[idx].buildingApp || '',
           tags: currentUser.tags || updatedList[idx].tags || ['개발자'],
+          website: currentUser.website || updatedList[idx].website,
           github: currentUser.github || updatedList[idx].github,
           twitter: currentUser.twitter || updatedList[idx].twitter,
           online: true,
@@ -204,6 +279,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           followingCount: 0,
           isFollowing: false,
           online: true,
+          website: currentUser.website,
           github: currentUser.github,
           twitter: currentUser.twitter,
           joinedAt: '방금',
@@ -221,52 +297,118 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   }, []);
 
-  // Supabase Auth Listener
+  // Unified, bulletproof session applicator for Supabase
+  const applySupabaseSession = useCallback(
+    (session: any) => {
+      if (!session?.user) return;
+      const u = session.user;
+      const email = u.email || 'demonst1004@gmail.com';
+      const name =
+        u.user_metadata?.full_name ||
+        u.user_metadata?.name ||
+        u.user_metadata?.user_name ||
+        email.split('@')[0] ||
+        'demonst';
+      const avatar =
+        u.user_metadata?.avatar_url ||
+        u.user_metadata?.picture ||
+        '/demon-mascot.png';
+
+      setUser((prev) => {
+        const updated: UserProfile = {
+          ...prev,
+          id: u.id,
+          email: email,
+          name: name,
+          avatar: avatar,
+          role: prev.role && prev.role !== '인디 메이커' ? prev.role : 'demonst 메이커',
+          bio: prev.bio || 'demonst 사이드 프로젝트 메이커입니다.',
+          buildingApp: prev.buildingApp || 'demonst',
+          tags: prev.tags && prev.tags.length > 0 ? prev.tags : ['메이커', '개발자', 'SaaS', 'AI'],
+          github: prev.github || 'https://github.com',
+          isLoggedIn: true,
+        };
+        localStorage.setItem('demon_user', JSON.stringify(updated));
+        syncUserToBuilders(updated);
+        return updated;
+      });
+
+      // Clean up URL tokens after successfully capturing session
+      if (
+        window.location.hash.includes('access_token') ||
+        window.location.search.includes('code=')
+      ) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    },
+    [syncUserToBuilders]
+  );
+
+  // Supabase Auth Listener & OAuth Redirect Processor
   useEffect(() => {
     if (isSupabaseConfigured && supabase) {
+      // 1. Initial check on mount
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session?.user) {
-          const u = session.user;
-          setUser((prev) => {
-            const updated: UserProfile = {
-              ...prev,
-              id: u.id,
-              email: u.email,
-              name: u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split('@')[0] || prev.name || '구글 사용자',
-              avatar: u.user_metadata?.avatar_url || prev.avatar || '/demon-mascot.png',
-              isLoggedIn: true,
-            };
-            syncUserToBuilders(updated);
-            return updated;
-          });
-
-          if (window.location.hash.includes('access_token')) {
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
+          applySupabaseSession(session);
         }
       });
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') && session?.user) {
-          const u = session.user;
-          setUser((prev) => {
-            const updated: UserProfile = {
-              ...prev,
-              id: u.id,
-              email: u.email,
-              name: u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split('@')[0] || prev.name || '구글 사용자',
-              avatar: u.user_metadata?.avatar_url || prev.avatar || '/demon-mascot.png',
-              isLoggedIn: true,
-            };
-            syncUserToBuilders(updated);
-            return updated;
-          });
+      // 2. Direct URL Hash Handler (Implicit OAuth grant: #access_token=...)
+      if (window.location.hash && window.location.hash.includes('access_token')) {
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        const errorDesc = hashParams.get('error_description') || hashParams.get('error');
 
-          if (window.location.hash.includes('access_token')) {
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
+        if (errorDesc) {
+          console.warn('OAuth redirect error from hash:', errorDesc);
+          showToast(`⚠️ 로그인 오류: ${errorDesc}`);
+        } else if (accessToken) {
+          supabase.auth
+            .setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || '',
+            })
+            .then(({ data }) => {
+              if (data?.session) {
+                applySupabaseSession(data.session);
+              }
+            })
+            .catch((e) => console.warn('setSession error:', e));
+        }
+      }
+
+      // 3. Direct URL Query Handler (PKCE OAuth grant: ?code=...)
+      if (window.location.search && window.location.search.includes('code=')) {
+        const searchParams = new URLSearchParams(window.location.search);
+        const code = searchParams.get('code');
+        const errorDesc = searchParams.get('error_description') || searchParams.get('error');
+
+        if (errorDesc) {
+          console.warn('OAuth redirect error from search:', errorDesc);
+          showToast(`⚠️ 로그인 오류: ${errorDesc}`);
+        } else if (code) {
+          supabase.auth
+            .exchangeCodeForSession(code)
+            .then(({ data }) => {
+              if (data?.session) {
+                applySupabaseSession(data.session);
+              }
+            })
+            .catch((e) => console.warn('exchangeCodeForSession error:', e));
+        }
+      }
+
+      // 4. OnAuthStateChange listener - captures INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED, etc.
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((event, session) => {
+        console.log('[Supabase Auth Event]:', event, session?.user?.email);
+        if (session?.user) {
+          applySupabaseSession(session);
         } else if (event === 'SIGNED_OUT') {
-          setUser({
+          const guestUser: UserProfile = {
             id: '',
             email: '',
             name: '게스트',
@@ -276,7 +418,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             buildingApp: '',
             tags: ['개발자', 'SaaS', 'AI'],
             isLoggedIn: false,
-          });
+          };
+          setUser(guestUser);
+          localStorage.setItem('demon_user', JSON.stringify(guestUser));
         }
       });
 
@@ -284,7 +428,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         subscription.unsubscribe();
       };
     }
-  }, [syncUserToBuilders]);
+  }, [applySupabaseSession, showToast]);
 
   // Persist local state
   useEffect(() => {
@@ -329,13 +473,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [darkMode]);
 
   const toggleDarkMode = () => setDarkMode((prev) => !prev);
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3500);
-  };
 
   const requireAuth = (callback: () => void, reason?: string) => {
     if (user.isLoggedIn) {
@@ -392,6 +529,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUser(updatedUser);
     localStorage.setItem('demon_user', JSON.stringify(updatedUser));
     syncUserToBuilders(updatedUser);
+    pingSearchEngines().catch(() => {});
   };
 
   // Follow / Unfollow builder
@@ -551,8 +689,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isNew: true,
     };
 
-    // 1. Immediate UI update
-    setProducts((prev) => [created, ...prev]);
+    // 1. Immediate UI update & local storage
+    setProducts((prev) => {
+      const next = [created, ...prev];
+      try {
+        localStorage.setItem('demon_products', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
 
     // 2. Permanent Supabase DB insert!
     insertProductToDB(created)
@@ -565,7 +709,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
       .catch((err) => console.warn('Supabase insertProduct error:', err));
 
-    showToast('✨ 제품이 성공적으로 등록되었습니다!');
+    // 3. Search Engine & Googlebot Auto-Crawl Ping
+    pingSearchEngines().catch(() => {});
+
+    showToast('✨ 제품이 성공적으로 등록되었습니다! (구글봇 크롤링 핑 발송됨)');
     return created;
   };
 
@@ -578,7 +725,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value={{
         products,
         currentTab,
-        setCurrentTab,
+        setCurrentTab: handleSetCurrentTab,
         selectedProduct,
         setSelectedProduct,
         feedbacks,

@@ -17,6 +17,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
   const [bio, setBio] = useState(user.bio || '새로운 가치를 코드로 만드는 메이커입니다.');
   const [buildingApp, setBuildingApp] = useState(user.buildingApp || '');
   const [tagsInput, setTagsInput] = useState((user.tags || ['개발자', 'SaaS', 'AI']).join(', '));
+  const [website, setWebsite] = useState(user.website || '');
   const [github, setGithub] = useState(user.github || '');
   const [twitter, setTwitter] = useState(user.twitter || '');
   const [isSaving, setIsSaving] = useState(false);
@@ -39,6 +40,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
       bio: bio.trim(),
       buildingApp: buildingApp.trim(),
       tags: parsedTags.length > 0 ? parsedTags : ['메이커'],
+      website: website.trim(),
       github: github.trim(),
       twitter: twitter.trim(),
     });
@@ -135,6 +137,17 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
               placeholder="React, Next.js, Python, Figma, AI"
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
+              className="w-full rounded-btn border border-border bg-surface-2 px-3 py-2 text-xs text-fg focus:border-accent focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-fg mb-1">개인 웹사이트 / 블로그 / 포트폴리오 URL (선택)</label>
+            <input
+              type="url"
+              placeholder="https://my-domain.com 또는 https://velog.io/@..."
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
               className="w-full rounded-btn border border-border bg-surface-2 px-3 py-2 text-xs text-fg focus:border-accent focus:outline-none"
             />
           </div>

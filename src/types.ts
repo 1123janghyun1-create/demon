@@ -12,6 +12,20 @@ export interface Product {
   createdAt: string;
   isNew?: boolean;
   instructions: string;
+  // Extended fields for rich product submission
+  description?: string;
+  gallery?: string[];
+  demoVideo?: string;
+  socialLinks?: {
+    twitter?: string;
+    github?: string;
+    linkedin?: string;
+    instagram?: string;
+    threads?: string;
+    youtube?: string;
+  };
+  additionalLinks?: Array<{ id: string; label: string; url: string }>;
+  tags?: string[];
 }
 
 export interface Feedback {
@@ -66,6 +80,7 @@ export interface UserProfile {
   bio?: string;
   buildingApp?: string;
   tags?: string[];
+  website?: string;
   github?: string;
   twitter?: string;
   isLoggedIn: boolean;
@@ -84,6 +99,7 @@ export interface Builder {
   followingCount: number;
   isFollowing?: boolean;
   online?: boolean;
+  website?: string;
   github?: string;
   twitter?: string;
   joinedAt?: string;

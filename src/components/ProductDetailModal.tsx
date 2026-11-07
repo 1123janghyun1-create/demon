@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, ExternalLink, Star, CheckCircle, Smartphone, Monitor, Send, MessageSquare, Image as ImageIcon, LogIn } from 'lucide-react';
+import { X, ExternalLink, Star, CheckCircle, Smartphone, Monitor, Send, MessageSquare, Image as ImageIcon, LogIn, Play, Globe } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { Product } from '../types';
 import { ImageUploader } from './ImageUploader';
@@ -71,7 +71,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
               <div className="size-16 shrink-0 overflow-hidden rounded-[15px] bg-surface-2 ring-1 ring-inset ring-border">
                 <img
                   src={product.icon}
-                  alt={product.title}
+                  alt={`${product.title} 로고`}
+                  loading="lazy"
                   className="h-full w-full object-cover"
                   onError={(e) => {
                     (e.target as HTMLElement).style.display = 'none';
@@ -85,11 +86,50 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                 <p className="mt-1 text-sm text-fg-muted">
                   {product.tagline}
                 </p>
-                <div className="mt-2 flex items-center gap-2 text-xs text-fg-muted">
+                <div className="mt-2 flex items-center gap-2 text-xs text-fg-muted flex-wrap">
                   <span className="font-medium text-fg-secondary">제작: {product.author}</span>
-                  <span>·</span>
-                  <span>{product.category}</span>
+                  {product.category && (
+                    <>
+                      <span>·</span>
+                      <span>{product.category}</span>
+                    </>
+                  )}
+                  {product.tags && product.tags.length > 0 && (
+                    <div className="flex items-center gap-1">
+                      {product.tags.map((t) => (
+                        <span key={t} className="rounded-pill bg-surface-2 px-1.5 py-0.2 text-[10px] text-fg-muted border border-border">
+                          #{t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
+                {/* Social & Store Links */}
+                {(product.socialLinks || (product.additionalLinks && product.additionalLinks.length > 0)) && (
+                  <div className="mt-2.5 flex items-center gap-2 flex-wrap text-xs">
+                    {product.socialLinks?.twitter && (
+                      <a href={product.socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="text-fg-muted hover:text-accent font-medium">
+                        X(Twitter)
+                      </a>
+                    )}
+                    {product.socialLinks?.github && (
+                      <a href={product.socialLinks.github} target="_blank" rel="noopener noreferrer" className="text-fg-muted hover:text-accent font-medium">
+                        GitHub
+                      </a>
+                    )}
+                    {product.socialLinks?.youtube && (
+                      <a href={product.socialLinks.youtube} target="_blank" rel="noopener noreferrer" className="text-fg-muted hover:text-accent font-medium">
+                        YouTube
+                      </a>
+                    )}
+                    {product.additionalLinks?.map((l) => (
+                      <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-bold text-[11px]">
+                        [{l.label}]
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -105,23 +145,64 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
             </a>
           </div>
 
-          {/* Screenshot Preview if available */}
-          {product.screenshot && (
+          {/* Demo Video if available */}
+          {product.demoVideo && (
+            <div className="mt-6 rounded-card border border-border bg-surface-2 p-4">
+              <div className="text-xs font-bold text-fg mb-2 flex items-center gap-1.5">
+                <Play className="w-3.5 h-3.5 text-accent" />
+                <span>데모 영상</span>
+              </div>
+              <a
+                href={product.demoVideo}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-btn bg-accent/10 text-accent px-3.5 py-2 text-xs font-bold hover:bg-accent hover:text-white transition-colors"
+              >
+                <Play className="w-3.5 h-3.5" />
+                <span>데모 영상 보러가기 ({product.demoVideo.slice(0, 45)}...)</span>
+              </a>
+            </div>
+          )}
+
+          {/* Screenshot / Gallery Preview */}
+          {(product.screenshot || (product.gallery && product.gallery.length > 0)) && (
             <div className="mt-6">
               <div className="text-xs font-bold text-fg mb-2 flex items-center gap-1.5">
                 <ImageIcon className="w-3.5 h-3.5 text-accent" />
-                <span>AI 캡처 웹사이트 프리뷰</span>
+                <span>미디어 프리뷰</span>
               </div>
               <div className="overflow-hidden rounded-card border border-border bg-surface-2 max-h-[320px]">
                 <img
-                  src={product.screenshot}
-                  alt="Website screenshot"
+                  src={product.screenshot || product.gallery?.[0]}
+                  alt={`${product.title} 사이트 스크린샷`}
+                  loading="lazy"
                   className="w-full h-auto object-cover object-top"
                   onError={(e) => {
                     (e.target as HTMLElement).style.display = 'none';
                   }}
                 />
               </div>
+
+              {/* Gallery thumbnails */}
+              {product.gallery && product.gallery.length > 1 && (
+                <div className="mt-2.5 grid grid-cols-4 gap-2">
+                  {product.gallery.map((gImg, i) => (
+                    <a key={i} href={gImg} target="_blank" rel="noopener noreferrer" className="aspect-video rounded border border-border overflow-hidden bg-surface-2">
+                      <img src={gImg} alt={`미리보기 ${i + 1}`} className="w-full h-full object-cover" />
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Detailed Description if available */}
+          {product.description && (
+            <div className="mt-6 rounded-card border border-border bg-surface-2 p-5">
+              <h3 className="text-sm font-bold text-fg mb-2">제품 상세 소개</h3>
+              <p className="text-xs text-fg-secondary leading-relaxed whitespace-pre-line">
+                {product.description}
+              </p>
             </div>
           )}
 

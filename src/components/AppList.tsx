@@ -109,17 +109,24 @@ export const AppList: React.FC = () => {
           </div>
         ) : (
           filteredProducts.map((product) => (
-            <div
+            <a
               key={product.id}
-              onClick={() => setSelectedProduct(product)}
-              className="group relative flex cursor-pointer items-center justify-between gap-4 rounded-card border border-border bg-surface p-4 shadow-card transition-all duration-150 hover:border-border-strong hover:shadow-card-hover"
+              href={`/?product=${product.id}`}
+              onClick={(e) => {
+                if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
+                  e.preventDefault();
+                  setSelectedProduct(product);
+                }
+              }}
+              className="group relative flex cursor-pointer items-center justify-between gap-4 rounded-card border border-border bg-surface p-4 shadow-card transition-all duration-150 hover:border-border-strong hover:shadow-card-hover no-underline text-fg"
             >
               {/* Left: Icon + Info */}
               <div className="flex items-center gap-3.5 min-w-0 flex-1">
                 <div className="relative size-14 shrink-0 overflow-hidden rounded-[15px] bg-surface-2 ring-1 ring-inset ring-border/60">
                   <img
                     src={product.icon}
-                    alt={product.title}
+                    alt={`${product.title} 로고`}
+                    loading="lazy"
                     onError={(e) => {
                       (e.target as HTMLElement).style.display = 'none';
                     }}
@@ -150,24 +157,41 @@ export const AppList: React.FC = () => {
                 </div>
               </div>
 
-              {/* Right: Feedback count + View page button */}
-              <div className="flex shrink-0 items-center gap-2.5 sm:gap-3.5">
+              {/* Right: Feedback count + External Website link + View page button */}
+              <div className="flex shrink-0 items-center gap-2 sm:gap-3">
                 <div
                   className="flex items-center gap-1 text-xs font-semibold text-fg-muted"
                   title="등록된 피드백 수"
                 >
                   <MessageSquare className="h-3.5 w-3.5 text-accent" />
-                  <span>피드백 {product.feedbackCount}건</span>
+                  <span className="hidden sm:inline">피드백</span>
+                  <span>{product.feedbackCount}건</span>
                 </div>
 
-                <button
-                  type="button"
-                  className="hidden sm:inline-flex items-center gap-1 rounded-btn border border-border bg-surface-2 px-3 py-1.5 text-xs font-semibold text-fg hover:bg-surface-3 transition-colors"
+                {/* Direct External Project URL for Googlebot & users */}
+                {product.url && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      window.open(product.url.startsWith('http') ? product.url : `https://${product.url}`, '_blank', 'noopener,noreferrer');
+                    }}
+                    title={`${product.title} 외부 웹사이트 방문`}
+                    className="inline-flex items-center gap-1 rounded-btn border border-border bg-surface-2 px-2.5 py-1.5 text-xs font-semibold text-fg hover:bg-surface-3 hover:text-accent transition-colors shrink-0"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-fg-muted" />
+                    <span className="hidden md:inline">방문</span>
+                  </button>
+                )}
+
+                <span
+                  className="hidden sm:inline-flex items-center gap-1 rounded-btn border border-border bg-surface-2 px-3 py-1.5 text-xs font-semibold text-fg group-hover:bg-accent group-hover:text-white transition-colors"
                 >
-                  <span>상세 보기</span>
-                </button>
+                  상세 보기
+                </span>
               </div>
-            </div>
+            </a>
           ))
         )}
       </div>
