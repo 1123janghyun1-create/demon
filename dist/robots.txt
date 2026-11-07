@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /
+
+# Googlebot & Image crawler rules
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Yeti
+Allow: /
+
+User-agent: Daumoa
+Allow: /
+
+# Canonical Sitemap URL
+Sitemap: https://demonst.vercel.app/sitemap.xml

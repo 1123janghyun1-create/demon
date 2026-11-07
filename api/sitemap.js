@@ -1,0 +1,137 @@
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://vwtlhgqmndrshjcekhii.supabase.co';
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_It2EcGB26YzpEj6vbZQ5-g_GorZe1C5';
+const siteBaseUrl = 'https://demonst.vercel.app';
+
+function escapeXml(unsafe) {
+  if (!unsafe) return '';
+  return String(unsafe)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+export default async function handler(req, res) {
+  let products = [];
+  let builders = [];
+
+  try {
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const { data: pData } = await supabase.from('products').select('*');
+    if (pData) products = pData;
+
+    const { data: bData } = await supabase.from('builders').select('*');
+    if (bData) builders = bData;
+  } catch (err) {
+    console.warn('Supabase fetch failed during dynamic sitemap generation:', err);
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <!-- demonst 메인 홈 -->
+  <url>
+    <loc>${siteBaseUrl}/</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>always</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>${siteBaseUrl}/demon-mascot.png</image:loc>
+      <image:title>demonst 마스코트</image:title>
+      <image:caption>인디 메이커를 위한 앱 테스트 &amp; 런치패드 플랫폼</image:caption>
+    </image:image>
+  </url>
+
+  <!-- 주요 카테고리 & 탭 페이지 -->
+  <url>
+    <loc>${siteBaseUrl}/#test</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${siteBaseUrl}/#builders</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${siteBaseUrl}/#leaderboard</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${siteBaseUrl}/#community</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${siteBaseUrl}/#about</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+`;
+
+  // 등록된 모든 프로젝트 및 스크린샷/로고 이미지
+  products.forEach((p) => {
+    const pUrl = `${siteBaseUrl}/?product=${encodeURIComponent(p.id)}`;
+    xml += `  <url>
+    <loc>${pUrl}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+`;
+    if (p.screenshot) {
+      xml += `    <image:image>
+      <image:loc>${escapeXml(p.screenshot)}</image:loc>
+      <image:title>${escapeXml(p.title)} 스크린샷</image:title>
+      <image:caption>${escapeXml(p.tagline || p.title)}</image:caption>
+    </image:image>
+`;
+    }
+    if (p.icon) {
+      xml += `    <image:image>
+      <image:loc>${escapeXml(p.icon)}</image:loc>
+      <image:title>${escapeXml(p.title)} 로고</image:title>
+    </image:image>
+`;
+    }
+    xml += `  </url>
+`;
+  });
+
+  // 등록된 모든 빌더 프로필 및 아바타 이미지
+  builders.forEach((b) => {
+    const bUrl = `${siteBaseUrl}/?builder=${encodeURIComponent(b.id)}`;
+    xml += `  <url>
+    <loc>${bUrl}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+`;
+    if (b.avatar) {
+      xml += `    <image:image>
+      <image:loc>${escapeXml(b.avatar)}</image:loc>
+      <image:title>${escapeXml(b.name)} 빌더 프로필</image:title>
+      <image:caption>${escapeXml(b.role || '인디 메이커')}</image:caption>
+    </image:image>
+`;
+    }
+    xml += `  </url>
+`;
+  });
+
+  xml += `</urlset>`;
+
+  res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+  res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=3600');
+  return res.status(200).send(xml);
+}
