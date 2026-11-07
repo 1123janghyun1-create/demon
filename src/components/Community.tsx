@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { MessageSquare, Heart, Share2, Send, Tag, Sparkles, LogIn } from 'lucide-react';
+import { MessageSquare, Heart, Share2, Send, Tag, Sparkles, LogIn, Trash2 } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { CommunityPost } from '../types';
 
 export const Community: React.FC = () => {
-  const { communityPosts, addCommunityPost, toggleLikePost, showToast, user, requireAuth, setIsLoginModalOpen } = useApp();
+  const { communityPosts, addCommunityPost, deleteCommunityPost, toggleLikePost, showToast, user, requireAuth, setIsLoginModalOpen } = useApp();
 
   const [filter, setFilter] = useState<'latest' | 'popular'>('latest');
   const [title, setTitle] = useState('');
@@ -203,9 +203,25 @@ export const Community: React.FC = () => {
               />
               <span className="text-xs font-bold text-fg">{post.author}</span>
               <span className="text-[11px] text-fg-muted">· {post.timeAgo}</span>
-              <span className="ml-auto rounded-pill bg-brand-subtle px-2 py-0.5 text-[10px] font-bold text-accent">
-                {post.tag}
-              </span>
+              <div className="ml-auto flex items-center gap-1.5">
+                <span className="rounded-pill bg-brand-subtle px-2 py-0.5 text-[10px] font-bold text-accent">
+                  {post.tag}
+                </span>
+                {user.isLoggedIn && (post.author === user.name || post.authorId === user.id || (user.email && post.author === user.email)) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('작성하신 게시글을 삭제하시겠습니까?')) {
+                        deleteCommunityPost(post.id);
+                      }
+                    }}
+                    className="p-1 text-fg-muted hover:text-rose-500 rounded transition-colors"
+                    title="게시글 삭제"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Post Title & Content */}

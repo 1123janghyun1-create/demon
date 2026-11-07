@@ -7,8 +7,11 @@ export interface Product {
   icon: string;
   screenshot?: string;
   feedbackCount: number;
+  views?: number;
+  upvotes?: number;
   url: string;
   author: string;
+  authorId?: string;
   createdAt: string;
   isNew?: boolean;
   instructions: string;
@@ -32,6 +35,7 @@ export interface Feedback {
   id: string;
   productId: string;
   author: string;
+  authorId?: string;
   avatar: string;
   rating: number;
   content: string;
@@ -43,6 +47,7 @@ export interface Feedback {
 export interface CommunityPost {
   id: string;
   author: string;
+  authorId?: string;
   avatar: string;
   timeAgo: string;
   tag: '런치' | '질문' | '팁' | '잡담';
@@ -64,6 +69,13 @@ export interface LeaderboardUser {
   avatar: string;
   feedbackCount: number;
   badge?: string;
+  aiScore?: number;
+  aiCommentary?: string;
+  role?: string;
+  testedAppsCount?: number;
+  launchedAppsCount?: number;
+  upvotesReceived?: number;
+  builderId?: string;
 }
 
 export interface Quote {
@@ -112,7 +124,25 @@ export interface DirectMessage {
   text: string;
   timestamp: string;
   isMine: boolean;
+  read?: boolean;
+}
+
+export type NotificationType = 'dm' | 'upvote' | 'feedback' | 'system';
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  createdAt: string;
+  read: boolean;
+  senderName?: string;
+  senderAvatar?: string;
+  productId?: string;
+  productTitle?: string;
+  builderId?: string;
+  commentText?: string;
 }
 
 export type NavTab = 'test' | 'builders' | 'leaderboard' | 'submit' | 'community' | 'about';
-export type FilterSort = 'newest' | 'feedback';
+export type FilterSort = 'newest' | 'upvotes' | 'views' | 'feedback';

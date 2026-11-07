@@ -1,7 +1,8 @@
 import React from 'react';
-import { Menu, Search, Quote as QuoteIcon, LogIn, LogOut } from 'lucide-react';
+import { Menu, Search, Quote as QuoteIcon, LogIn, LogOut, Edit3, Bell, MessageSquare } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { GoogleTranslate } from './GoogleTranslate';
+import { NotificationDropdown } from './NotificationDropdown';
 
 interface HeaderProps {
   onOpenMobileMenu: () => void;
@@ -15,7 +16,14 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
     nextQuote,
     user,
     setIsLoginModalOpen,
+    setIsProfileEditOpen,
     logout,
+    requireAuth,
+    isNotificationOpen,
+    setIsNotificationOpen,
+    unreadNotificationCount,
+    setIsDmInboxOpen,
+    unreadDmCount,
   } = useApp();
 
   return (
@@ -70,16 +78,71 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
           </p>
         </div>
 
+        {/* 1:1 Direct Message (DM) Inbox Button */}
+        <button
+          type="button"
+          onClick={() => {
+            requireAuth(() => {
+              setIsDmInboxOpen(true);
+            }, '1:1 DM을 이용하려면 먼저 Google 로그인이 필요합니다.');
+          }}
+          className="relative rounded-full p-2 text-fg-secondary hover:bg-surface-2 hover:text-fg transition-colors cursor-pointer"
+          title="1:1 다이렉트 메시지 (DM)"
+          aria-label="DM 메시지함 열기"
+        >
+          <MessageSquare className="w-4 h-4" />
+          {unreadDmCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-surface">
+              {unreadDmCount > 9 ? '9+' : unreadDmCount}
+            </span>
+          )}
+        </button>
+
+        {/* Notification Bell with Dropdown */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+            className="relative rounded-full p-2 text-fg-secondary hover:bg-surface-2 hover:text-fg transition-colors cursor-pointer"
+            title="알림"
+            aria-label="알림 목록 열기"
+          >
+            <Bell className="w-4 h-4" />
+            {unreadNotificationCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-surface animate-pulse">
+                {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+              </span>
+            )}
+          </button>
+
+          <NotificationDropdown
+            isOpen={isNotificationOpen}
+            onClose={() => setIsNotificationOpen(false)}
+          />
+        </div>
+
         {/* User Auth Button */}
         {user.isLoggedIn ? (
-          <div className="flex items-center gap-2 pl-1">
-            <img
-              src={user.avatar}
-              alt={user.name}
-              title={`${user.name} (${user.email || 'Google 연동'})`}
-              className="w-8 h-8 rounded-full object-cover ring-1 ring-border"
-            />
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsProfileEditOpen(true)}
+            className="group flex items-center gap-2 pl-1 rounded-full p-0.5 hover:ring-2 hover:ring-accent transition-all cursor-pointer"
+            title={`${user.name} (클릭하여 프로필 & 사진 수정)`}
+          >
+            <div className="relative size-8">
+              <img
+                src={user.avatar}
+                alt={user.name}
+                className="w-full h-full rounded-full object-cover ring-1 ring-border group-hover:opacity-80 transition-opacity"
+              />
+              <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
+                <Edit3 className="w-3 h-3" />
+              </div>
+            </div>
+            <span className="hidden sm:inline text-xs font-bold text-fg max-w-[100px] truncate group-hover:text-accent transition-colors">
+              {user.name}
+            </span>
+          </button>
         ) : (
           <button
             onClick={() => setIsLoginModalOpen(true)}

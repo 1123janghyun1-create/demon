@@ -26,6 +26,8 @@ export async function fetchProductsFromDB(): Promise<Product[] | null> {
       icon: row.icon,
       screenshot: row.screenshot,
       feedbackCount: row.feedback_count || 0,
+      views: row.views || 0,
+      upvotes: row.upvotes || 0,
       url: row.url,
       author: row.author,
       instructions: row.instructions || '',
@@ -50,6 +52,8 @@ export async function insertProductToDB(product: Product): Promise<boolean> {
         icon: product.icon,
         screenshot: product.screenshot,
         feedback_count: product.feedbackCount || 0,
+        views: product.views || 0,
+        upvotes: product.upvotes || 0,
         url: product.url,
         author: product.author,
         instructions: product.instructions,
@@ -63,6 +67,102 @@ export async function insertProductToDB(product: Product): Promise<boolean> {
     return true;
   } catch (err) {
     console.warn('insertProductToDB error:', err);
+    return false;
+  }
+}
+
+export async function updateProductInDB(product: Product): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const { error } = await supabase
+      .from('products')
+      .update({
+        title: product.title,
+        tagline: product.tagline,
+        category: product.category,
+        icon: product.icon,
+        screenshot: product.screenshot,
+        views: product.views || 0,
+        upvotes: product.upvotes || 0,
+        url: product.url,
+        instructions: product.instructions,
+      })
+      .eq('id', product.id);
+
+    if (error) {
+      console.warn('Supabase updateProduct warning:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('updateProductInDB error:', err);
+    return false;
+  }
+}
+
+export async function incrementProductViewsInDB(productId: string): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    // Attempt RPC increment first if created, otherwise fallback to fetch & update
+    const { error: rpcError } = await supabase.rpc('increment_product_views', { product_id: productId });
+    if (!rpcError) return true;
+
+    const { data } = await supabase.from('products').select('views').eq('id', productId).single();
+    if (data) {
+      const nextViews = (data.views || 0) + 1;
+      await supabase.from('products').update({ views: nextViews }).eq('id', productId);
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+export async function incrementProductUpvoteInDB(productId: string): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const { error: rpcError } = await supabase.rpc('increment_product_upvotes', { product_id: productId });
+    if (!rpcError) return true;
+
+    const { data } = await supabase.from('products').select('upvotes').eq('id', productId).single();
+    if (data) {
+      const nextUpvotes = (data.upvotes || 0) + 1;
+      await supabase.from('products').update({ upvotes: nextUpvotes }).eq('id', productId);
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+export async function decrementProductUpvoteInDB(productId: string): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const { data } = await supabase.from('products').select('upvotes').eq('id', productId).single();
+    if (data) {
+      const nextUpvotes = Math.max(0, (data.upvotes || 0) - 1);
+      await supabase.from('products').update({ upvotes: nextUpvotes }).eq('id', productId);
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+export async function deleteProductFromDB(productId: string): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const { error } = await supabase.from('products').delete().eq('id', productId);
+    if (error) {
+      console.warn('Supabase deleteProduct warning:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('deleteProductFromDB error:', err);
     return false;
   }
 }
@@ -125,6 +225,16 @@ export async function insertFeedbackToDB(feedback: Feedback): Promise<boolean> {
       } catch {}
     }
 
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+export async function deleteFeedbackFromDB(feedbackId: string): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const { error } = await supabase.from('feedbacks').delete().eq('id', feedbackId);
     return !error;
   } catch {
     return false;
@@ -236,6 +346,16 @@ export async function insertCommunityPostToDB(post: CommunityPost): Promise<bool
         comments: post.comments || 0,
       },
     ]);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+export async function deleteCommunityPostFromDB(postId: string): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const { error } = await supabase.from('community_posts').delete().eq('id', postId);
     return !error;
   } catch {
     return false;

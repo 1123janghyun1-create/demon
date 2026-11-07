@@ -9,7 +9,18 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) => {
-  const { currentTab, setCurrentTab, darkMode, toggleDarkMode, user, logout, setIsLoginModalOpen, setIsProfileEditOpen } = useApp();
+  const {
+    currentTab,
+    setCurrentTab,
+    darkMode,
+    toggleDarkMode,
+    user,
+    logout,
+    setIsLoginModalOpen,
+    setIsProfileEditOpen,
+    setIsDmInboxOpen,
+    unreadDmCount,
+  } = useApp();
 
   const navItems: { tab: NavTab; label: string; icon: React.ReactNode }[] = [
     {
@@ -127,10 +138,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
             {user.isLoggedIn ? (
               <div className="flex flex-col gap-2 p-2.5 rounded-btn bg-surface-2 border border-border">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <img src={user.avatar} alt="user" className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-border" />
+                  <div
+                    onClick={() => setIsProfileEditOpen(true)}
+                    className="flex items-center gap-2 min-w-0 cursor-pointer group"
+                    title="클릭하여 프로필 & 사진 수정"
+                  >
+                    <div className="relative">
+                      <img src={user.avatar} alt="user" className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-border group-hover:ring-accent transition-all" />
+                      <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
+                        <Edit3 className="w-3 h-3" />
+                      </div>
+                    </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-bold text-fg truncate">{user.name}</span>
+                      <span className="text-xs font-bold text-fg truncate group-hover:text-accent transition-colors">{user.name}</span>
                       <span className="text-[10px] text-accent font-medium truncate">{user.role || '인디 메이커'}</span>
                     </div>
                   </div>
@@ -142,6 +162,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
                     <LogOut className="w-3.5 h-3.5" />
                   </button>
                 </div>
+
+                {/* DM Inbox Shortcut */}
+                <button
+                  type="button"
+                  onClick={() => setIsDmInboxOpen(true)}
+                  className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-btn bg-surface border border-border text-[11px] font-bold text-fg hover:bg-surface-3 transition-colors shadow-2xs"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-accent" />
+                    <span>내 1:1 DM함</span>
+                  </div>
+                  {unreadDmCount > 0 && (
+                    <span className="rounded-full bg-rose-500 px-1.5 py-0.2 text-[9px] font-bold text-white">
+                      {unreadDmCount}
+                    </span>
+                  )}
+                </button>
 
                 {/* Edit profile shortcut */}
                 <button

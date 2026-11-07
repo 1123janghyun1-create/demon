@@ -10,6 +10,7 @@ import { Community } from './components/Community';
 import { About } from './components/About';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { DirectMessageModal } from './components/DirectMessageModal';
+import { DmInboxModal } from './components/DmInboxModal';
 import { ProfileEditModal } from './components/ProfileEditModal';
 import { LoginModal } from './components/LoginModal';
 import { LegalModals, LegalModalType } from './components/LegalModals';
@@ -24,6 +25,8 @@ export const AppContent: React.FC = () => {
     setSelectedProduct,
     activeDmBuilder,
     setActiveDmBuilder,
+    isDmInboxOpen,
+    setIsDmInboxOpen,
     isLoginModalOpen,
     setIsLoginModalOpen,
     loginModalMessage,
@@ -111,8 +114,14 @@ export const AppContent: React.FC = () => {
         />
       )}
 
-      {/* 1:1 Direct Message Modal */}
-      {activeDmBuilder && (
+      {/* 1:1 Direct Message Inbox & Messenger Modal */}
+      <DmInboxModal
+        isOpen={isDmInboxOpen}
+        onClose={() => setIsDmInboxOpen(false)}
+      />
+
+      {/* 1:1 Direct Message Single Pop-up Modal (when inbox is not open) */}
+      {activeDmBuilder && !isDmInboxOpen && (
         <DirectMessageModal
           builder={activeDmBuilder}
           onClose={() => setActiveDmBuilder(null)}

@@ -4,7 +4,16 @@ import { useApp } from '../AppContext';
 import { Builder } from '../types';
 
 export const Builders: React.FC = () => {
-  const { builders, toggleFollowBuilder, setActiveDmBuilder, requireAuth, user, setIsProfileEditOpen, setIsLoginModalOpen } = useApp();
+  const {
+    builders,
+    toggleFollowBuilder,
+    setActiveDmBuilder,
+    openDmWithBuilder,
+    requireAuth,
+    user,
+    setIsProfileEditOpen,
+    setIsLoginModalOpen,
+  } = useApp();
   const [filterRole, setFilterRole] = useState<string>('all');
   const [search, setSearch] = useState('');
 
@@ -30,9 +39,7 @@ export const Builders: React.FC = () => {
   }, [builders, filterRole, search]);
 
   const handleOpenDm = (builder: Builder) => {
-    requireAuth(() => {
-      setActiveDmBuilder(builder);
-    }, `${builder.name}님에게 DM을 보내려면 먼저 Google 로그인이 필요합니다.`);
+    openDmWithBuilder(builder);
   };
 
   return (

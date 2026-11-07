@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { MessageSquare, ExternalLink, Sparkles, PlusCircle } from 'lucide-react';
+import { MessageSquare, ExternalLink, Sparkles, PlusCircle, Eye, ChevronUp, Flame } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { Product, FilterSort } from '../types';
 
@@ -11,6 +11,10 @@ export const AppList: React.FC = () => {
     filterSort,
     setFilterSort,
     setCurrentTab,
+    incrementProductViews,
+    toggleProductUpvote,
+    isProductUpvoted,
+    user,
   } = useApp();
 
   const filteredProducts = useMemo(() => {
@@ -31,6 +35,10 @@ export const AppList: React.FC = () => {
     // Sort filter
     if (filterSort === 'newest') {
       // default is recent first
+    } else if (filterSort === 'upvotes') {
+      list.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
+    } else if (filterSort === 'views') {
+      list.sort((a, b) => (b.views || 0) - (a.views || 0));
     } else if (filterSort === 'feedback') {
       list.sort((a, b) => b.feedbackCount - a.feedbackCount);
     }
@@ -55,10 +63,10 @@ export const AppList: React.FC = () => {
 
       {/* Filter Tabs */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
             onClick={() => setFilterSort('newest')}
-            className={`rounded-pill px-3.5 py-1.5 text-xs font-semibold transition-all ${
+            className={`rounded-pill px-3 py-1.5 text-xs font-semibold transition-all ${
               filterSort === 'newest'
                 ? 'bg-fg text-surface shadow-sm'
                 : 'text-fg-secondary hover:bg-surface-2'
@@ -68,8 +76,32 @@ export const AppList: React.FC = () => {
           </button>
 
           <button
+            onClick={() => setFilterSort('upvotes')}
+            className={`rounded-pill px-3 py-1.5 text-xs font-semibold transition-all inline-flex items-center gap-1 ${
+              filterSort === 'upvotes'
+                ? 'bg-fg text-surface shadow-sm'
+                : 'text-fg-secondary hover:bg-surface-2'
+            }`}
+          >
+            <ChevronUp className="w-3.5 h-3.5 text-rose-500" />
+            <span>추천 많은 순</span>
+          </button>
+
+          <button
+            onClick={() => setFilterSort('views')}
+            className={`rounded-pill px-3 py-1.5 text-xs font-semibold transition-all inline-flex items-center gap-1 ${
+              filterSort === 'views'
+                ? 'bg-fg text-surface shadow-sm'
+                : 'text-fg-secondary hover:bg-surface-2'
+            }`}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>많이 본 순</span>
+          </button>
+
+          <button
             onClick={() => setFilterSort('feedback')}
-            className={`rounded-pill px-3.5 py-1.5 text-xs font-semibold transition-all ${
+            className={`rounded-pill px-3 py-1.5 text-xs font-semibold transition-all ${
               filterSort === 'feedback'
                 ? 'bg-fg text-surface shadow-sm'
                 : 'text-fg-secondary hover:bg-surface-2'
@@ -116,6 +148,7 @@ export const AppList: React.FC = () => {
                 if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
                   e.preventDefault();
                   setSelectedProduct(product);
+                  incrementProductViews(product.id);
                 }
               }}
               className="group relative flex cursor-pointer items-center justify-between gap-4 rounded-card border border-border bg-surface p-4 shadow-card transition-all duration-150 hover:border-border-strong hover:shadow-card-hover no-underline text-fg"
@@ -150,6 +183,11 @@ export const AppList: React.FC = () => {
                     <span className="shrink-0 text-[11px] text-fg-muted">
                       {product.category}
                     </span>
+                    {user.isLoggedIn && (product.author === user.name || product.authorId === user.id || (user.email && product.author === user.email)) && (
+                      <span className="shrink-0 rounded-pill bg-accent/10 px-2 py-0.5 text-[10px] font-bold text-accent border border-accent/20">
+                        내 제품
+                      </span>
+                    )}
                   </div>
                   <p className="mt-1 text-sm text-fg-muted truncate">
                     {product.tagline}
@@ -157,8 +195,18 @@ export const AppList: React.FC = () => {
                 </div>
               </div>
 
-              {/* Right: Feedback count + External Website link + View page button */}
+              {/* Right: Views + Feedback count + Upvote button + External Website link + View page button */}
               <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+                {/* Views */}
+                <div
+                  className="flex items-center gap-1 text-xs text-fg-muted"
+                  title="조회수"
+                >
+                  <Eye className="h-3.5 w-3.5 text-fg-muted" />
+                  <span>{product.views || 0}</span>
+                </div>
+
+                {/* Feedback count */}
                 <div
                   className="flex items-center gap-1 text-xs font-semibold text-fg-muted"
                   title="등록된 피드백 수"
@@ -167,6 +215,31 @@ export const AppList: React.FC = () => {
                   <span className="hidden sm:inline">피드백</span>
                   <span>{product.feedbackCount}건</span>
                 </div>
+
+                {/* Upvote Button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleProductUpvote(product.id);
+                  }}
+                  title={isProductUpvoted(product.id) ? '추천 취소' : '추천(업보트)'}
+                  className={`group/vote flex items-center gap-1.5 rounded-btn px-2.5 py-1.5 text-xs font-bold transition-all border shrink-0 ${
+                    isProductUpvoted(product.id)
+                      ? 'bg-rose-500/10 border-rose-500/40 text-rose-600 dark:text-rose-400 shadow-sm'
+                      : 'bg-surface-2 border-border text-fg hover:border-rose-500/40 hover:text-rose-500'
+                  }`}
+                >
+                  <ChevronUp
+                    className={`w-3.5 h-3.5 transition-transform ${
+                      isProductUpvoted(product.id)
+                        ? 'text-rose-500 scale-125'
+                        : 'text-fg-muted group-hover/vote:text-rose-500 group-hover/vote:-translate-y-0.5'
+                    }`}
+                  />
+                  <span>{product.upvotes || 0}</span>
+                </button>
 
                 {/* Direct External Project URL for Googlebot & users */}
                 {product.url && (
