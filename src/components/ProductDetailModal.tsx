@@ -54,7 +54,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
             <span className="text-xs font-bold px-2 py-0.5 rounded-pill bg-brand-subtle text-accent">
               앱 테스트
             </span>
-            <span className="text-xs text-fg-muted">demon verified</span>
+            <span className="text-xs text-fg-muted">demonst verified</span>
           </div>
           <button
             onClick={onClose}

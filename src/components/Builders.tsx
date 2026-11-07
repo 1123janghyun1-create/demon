@@ -47,7 +47,7 @@ export const Builders: React.FC = () => {
             </span>
           </h1>
           <p className="mt-1 text-sm text-fg-muted leading-relaxed">
-            demon에 로그인한 인디 메이커와 개발자들을 만나고 서로 팔로우 및 1:1 대화를 나눠보세요.
+            demonst에 로그인한 인디 메이커와 개발자들을 만나고 서로 팔로우 및 1:1 대화를 나눠보세요.
           </p>
         </div>
 

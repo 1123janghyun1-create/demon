@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutGrid, Users, Trophy, PlusCircle, MessageSquare, Sun, Moon, LogIn, LogOut, Edit3 } from 'lucide-react';
+import { LayoutGrid, Users, Trophy, PlusCircle, MessageSquare, Sparkles, Sun, Moon, LogIn, LogOut, Edit3 } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { NavTab } from '../types';
 
@@ -36,6 +36,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
       tab: 'community',
       label: '커뮤니티',
       icon: <MessageSquare className="w-[18px] h-[18px]" />
+    },
+    {
+      tab: 'about',
+      label: 'demonst 소개',
+      icon: <Sparkles className="w-[18px] h-[18px]" />
     }
   ];
 
@@ -79,7 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
                 <div className="flex flex-col">
                   <div className="flex items-center gap-1">
                     <span className="text-[20px] font-extrabold tracking-tight text-fg font-sans leading-none">
-                      demon
+                      demonst
                     </span>
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400">
                       v1.0

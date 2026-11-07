@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
-import { Bot, Sparkles, Check, ArrowRight, Info, Loader2, LogIn } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Bot, Sparkles, Check, ArrowRight, Info, Loader2, LogIn, Globe, UploadCloud, FileText } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { fetchWebsiteMetadata } from '../lib/metadataFetcher';
+import { uploadToCloudinary } from '../lib/cloudinary';
 import { ImageUploader } from './ImageUploader';
 
 export const SubmitApp: React.FC = () => {
-  const { addProduct, setCurrentTab, user, requireAuth, setIsLoginModalOpen } = useApp();
+  const { addProduct, setCurrentTab, user, requireAuth, setIsLoginModalOpen, showToast } = useApp();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [submitMode, setSubmitMode] = useState<'url' | 'file'>('url');
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
   const [tagline, setTagline] = useState('');
@@ -17,6 +19,11 @@ export const SubmitApp: React.FC = () => {
   const [screenshotUrl, setScreenshotUrl] = useState('');
   const [isCrawling, setIsCrawling] = useState(false);
   const [crawlStatus, setCrawlStatus] = useState('');
+
+  // File upload state
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [uploadFileName, setUploadFileName] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // AI Bot Auto Crawler with Real Screenshot & Logo fetching
   const handleAutoFill = async () => {
@@ -47,6 +54,52 @@ export const SubmitApp: React.FC = () => {
         setStep(2);
       }
     }, '앱을 등록하려면 먼저 Google 로그인이 필요합니다.');
+  };
+
+  // Direct File Upload handler (images, demo files, zip, html)
+  const handleFileUpload = async (file: File) => {
+    requireAuth(async () => {
+      try {
+        setIsUploadingFile(true);
+        setUploadFileName(file.name);
+
+        const cleanName = file.name
+          .replace(/\.[^/.]+$/, '')
+          .replace(/[-_]/g, ' ')
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+
+        setTitle(cleanName);
+        setTagline(`${cleanName} — 인디 메이커의 신작 프로젝트입니다.`);
+        setInstructions('업로드된 프로젝트 파일과 스크린샷을 검토하고 피드백을 남겨주세요.');
+
+        // Upload to Cloudinary
+        const uploadedUrl = await uploadToCloudinary(file);
+
+        if (file.type.startsWith('image/')) {
+          setIconUrl(uploadedUrl);
+          setScreenshotUrl(uploadedUrl);
+          setUrl(uploadedUrl);
+        } else {
+          setUrl(uploadedUrl);
+          setIconUrl('/demon-mascot.png');
+        }
+
+        showToast('파일이 성공적으로 업로드되었습니다!');
+        setIsUploadingFile(false);
+        setStep(2);
+      } catch (err: any) {
+        console.error('File upload error:', err);
+        setIsUploadingFile(false);
+        showToast(err.message || '파일 업로드에 실패했습니다.');
+      }
+    }, '파일을 업로드하여 앱을 등록하려면 먼저 Google 로그인이 필요합니다.');
+  };
+
+  const onFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -125,62 +178,151 @@ export const SubmitApp: React.FC = () => {
         </div>
       </div>
 
-      {/* Step 1: Input URL & Name */}
+      {/* Step 1: Choose URL or File Upload */}
       {step === 1 && (
         <div className="rounded-card border border-border bg-surface p-6 shadow-card">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="size-10 rounded-full bg-brand-subtle flex items-center justify-center text-accent">
-              <Bot className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-fg">제품 주소를 알려주세요</h2>
-              <p className="text-xs text-fg-muted">웹사이트, App Store, Google Play 링크를 모두 지원합니다.</p>
-            </div>
+          {/* Mode Switcher Tabs */}
+          <div className="flex rounded-btn bg-surface-2 p-1 border border-border mb-6">
+            <button
+              type="button"
+              onClick={() => setSubmitMode('url')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-btn text-xs font-bold transition-all ${
+                submitMode === 'url' ? 'bg-surface text-fg shadow-2xs' : 'text-fg-muted hover:text-fg'
+              }`}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>웹사이트 URL로 등록</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSubmitMode('file')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-btn text-xs font-bold transition-all ${
+                submitMode === 'file' ? 'bg-surface text-fg shadow-2xs' : 'text-fg-muted hover:text-fg'
+              }`}
+            >
+              <UploadCloud className="w-3.5 h-3.5" />
+              <span>파일 직접 업로드로 등록</span>
+            </button>
           </div>
 
-          <div className="flex flex-col gap-4">
-            <div>
-              <label className="block text-xs font-bold text-fg mb-1.5">제품 주소 (URL) *</label>
-              <input
-                type="url"
-                required
-                placeholder="https://toss.im 또는 https://careerflow.co.kr 등"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                className="w-full rounded-btn border border-border bg-surface-2 px-3.5 py-2.5 text-sm text-fg placeholder:text-fg-muted focus:border-accent focus:outline-none font-medium"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-fg mb-1.5">제품 이름 (선택 - 비워두면 AI 봇이 자동 추출)</label>
-              <input
-                type="text"
-                placeholder="직접 입력하지 않아도 AI가 사이트에서 자동으로 찾아옵니다"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full rounded-btn border border-border bg-surface-2 px-3.5 py-2.5 text-sm text-fg placeholder:text-fg-muted focus:border-accent focus:outline-none"
-              />
-            </div>
-
-            {isCrawling && (
-              <div className="rounded-btn border border-accent/20 bg-brand-subtle p-3.5 flex items-center gap-3">
-                <Loader2 className="w-5 h-5 text-accent animate-spin shrink-0" />
-                <span className="text-xs font-bold text-accent">{crawlStatus}</span>
+          {submitMode === 'url' ? (
+            <>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="size-10 rounded-full bg-brand-subtle flex items-center justify-center text-accent">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-fg">제품 주소를 알려주세요</h2>
+                  <p className="text-xs text-fg-muted">웹사이트, App Store, Google Play 링크를 모두 지원합니다.</p>
+                </div>
               </div>
-            )}
 
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={handleAutoFill}
-                disabled={!url.trim() || isCrawling}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-btn bg-accent py-3 text-sm font-bold text-white shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
+              <div className="flex flex-col gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-fg mb-1.5">제품 주소 (URL) *</label>
+                  <input
+                    type="url"
+                    required
+                    placeholder="https://toss.im 또는 https://careerflow.co.kr 등"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    className="w-full rounded-btn border border-border bg-surface-2 px-3.5 py-2.5 text-sm text-fg placeholder:text-fg-muted focus:border-accent focus:outline-none font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-fg mb-1.5">제품 이름 (선택 - 비워두면 AI 봇이 자동 추출)</label>
+                  <input
+                    type="text"
+                    placeholder="직접 입력하지 않아도 AI가 사이트에서 자동으로 찾아옵니다"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full rounded-btn border border-border bg-surface-2 px-3.5 py-2.5 text-sm text-fg placeholder:text-fg-muted focus:border-accent focus:outline-none"
+                  />
+                </div>
+
+                {isCrawling && (
+                  <div className="rounded-btn border border-accent/20 bg-brand-subtle p-3.5 flex items-center gap-3">
+                    <Loader2 className="w-5 h-5 text-accent animate-spin shrink-0" />
+                    <span className="text-xs font-bold text-accent">{crawlStatus}</span>
+                  </div>
+                )}
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleAutoFill}
+                    disabled={!url.trim() || isCrawling}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-btn bg-accent py-3 text-sm font-bold text-white shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>{isCrawling ? 'AI 봇이 로고와 스크린샷을 찾는 중...' : 'AI 봇으로 로고·스크린샷 자동 가져오기'}</span>
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* File Upload Mode */
+            <>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="size-10 rounded-full bg-brand-subtle flex items-center justify-center text-accent">
+                  <UploadCloud className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-fg">프로젝트 파일을 업로드하세요</h2>
+                  <p className="text-xs text-fg-muted">
+                    스크린샷 이미지(PNG, JPG), 데모 HTML, ZIP 또는 앱 빌드 파일을 직접 업로드할 수 있습니다.
+                  </p>
+                </div>
+              </div>
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={onFileInputChange}
+                accept="image/*,.zip,.html,.pdf,.apk"
+                className="hidden"
+              />
+
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) handleFileUpload(file);
+                }}
+                className="border-2 border-dashed border-border hover:border-accent rounded-2xl p-8 text-center cursor-pointer bg-surface-2 hover:bg-surface-3 transition-colors flex flex-col items-center justify-center gap-3 group"
               >
-                <Sparkles className="w-4 h-4" />
-                <span>{isCrawling ? 'AI 봇이 로고와 스크린샷을 찾는 중...' : 'AI 봇으로 로고·스크린샷 자동 가져오기'}</span>
-              </button>
-            </div>
-          </div>
+                {isUploadingFile ? (
+                  <div className="flex flex-col items-center gap-2 py-4">
+                    <Loader2 className="w-8 h-8 text-accent animate-spin" />
+                    <span className="text-xs font-bold text-fg">
+                      '{uploadFileName}' Cloudinary로 안전하게 업로드 중...
+                    </span>
+                    <span className="text-[11px] text-fg-muted">잠시만 기다려주세요</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center text-accent group-hover:scale-110 transition-transform">
+                      <UploadCloud className="w-6 h-6" />
+                    </div>
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-sm font-bold text-fg">
+                        파일을 여기에 드래그하거나 클릭하여 선택
+                      </span>
+                      <span className="text-xs text-fg-muted">
+                        지원 형식: 이미지 (PNG, JPG, WebP), 데모 HTML, ZIP 압축 파일 등
+                      </span>
+                    </div>
+                    <span className="mt-2 text-[11px] font-semibold text-accent px-3 py-1 rounded-full bg-accent/10">
+                      Cloudinary CDN 자동 최적화 저장
+                    </span>
+                  </>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -291,7 +433,7 @@ export const SubmitApp: React.FC = () => {
                 type="submit"
                 className="inline-flex items-center gap-1.5 rounded-btn bg-accent px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-accent-hover transition-colors"
               >
-                <span>demon에 정식 등록하기</span>
+                <span>demonst에 정식 등록하기</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -307,7 +449,7 @@ export const SubmitApp: React.FC = () => {
           </div>
           <h2 className="text-xl font-extrabold text-fg">등록이 완료되었습니다!</h2>
           <p className="mt-2 text-sm text-fg-muted max-w-[420px] mx-auto">
-            {title} 제품이 demon 런치패드에 성공적으로 등록되었습니다. 초기 테스터들이 방문하여 양질의 피드백을 전달할 예정입니다.
+            {title} 제품이 demonst 런치패드에 성공적으로 등록되었습니다. 초기 테스터들이 방문하여 양질의 피드백을 전달할 예정입니다.
           </p>
 
           <div className="mt-6 flex justify-center gap-3">

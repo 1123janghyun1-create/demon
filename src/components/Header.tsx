@@ -1,6 +1,7 @@
 import React from 'react';
 import { Menu, Search, Quote as QuoteIcon, LogIn, LogOut } from 'lucide-react';
 import { useApp } from '../AppContext';
+import { GoogleTranslate } from './GoogleTranslate';
 
 interface HeaderProps {
   onOpenMobileMenu: () => void;
@@ -90,9 +91,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
           </button>
         )}
 
-        {/* Language selector */}
-        <div className="hidden sm:flex items-center text-xs font-semibold rounded-btn border border-border bg-surface-2 px-2.5 py-1 text-fg-secondary">
-          <span>KO</span>
+        {/* Google Translate Language Selector */}
+        <div className="flex items-center">
+          <GoogleTranslate />
         </div>
       </div>
     </header>

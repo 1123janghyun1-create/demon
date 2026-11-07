@@ -7,15 +7,18 @@ import { Builders } from './components/Builders';
 import { Leaderboard } from './components/Leaderboard';
 import { SubmitApp } from './components/SubmitApp';
 import { Community } from './components/Community';
+import { About } from './components/About';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { DirectMessageModal } from './components/DirectMessageModal';
 import { ProfileEditModal } from './components/ProfileEditModal';
 import { LoginModal } from './components/LoginModal';
+import { LegalModals, LegalModalType } from './components/LegalModals';
 import { Toast } from './components/Toast';
 
 export const AppContent: React.FC = () => {
   const {
     currentTab,
+    setCurrentTab,
     selectedProduct,
     setSelectedProduct,
     activeDmBuilder,
@@ -27,6 +30,7 @@ export const AppContent: React.FC = () => {
     setIsProfileEditOpen,
   } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [legalModal, setLegalModal] = useState<LegalModalType>(null);
 
   return (
     <div className="min-h-screen bg-surface text-fg flex">
@@ -48,22 +52,55 @@ export const AppContent: React.FC = () => {
           {currentTab === 'leaderboard' && <Leaderboard />}
           {currentTab === 'submit' && <SubmitApp />}
           {currentTab === 'community' && <Community />}
+          {currentTab === 'about' && <About />}
         </main>
 
         {/* Minimal Footer */}
         <footer className="border-t border-border py-6 px-4 sm:px-6 text-center text-xs text-fg-muted flex flex-col sm:flex-row items-center justify-between gap-3 max-w-[840px] mx-auto w-full">
           <div className="flex items-center gap-2">
-            <img src="/demon-mascot.png" alt="demon" className="w-4 h-4 object-contain" />
-            <span className="font-bold text-fg">demon</span>
+            <img src="/demon-mascot.png" alt="demonst" className="w-4 h-4 object-contain" />
+            <button
+              onClick={() => setCurrentTab('about')}
+              className="font-bold text-fg hover:text-accent transition-colors cursor-pointer"
+            >
+              demonst
+            </button>
             <span>· Made for indie makers & builders</span>
           </div>
           <div className="flex items-center gap-4 text-[11px]">
-            <span>이용약관</span>
-            <span>개인정보처리방침</span>
-            <span>문의하기</span>
+            <button
+              onClick={() => setCurrentTab('about')}
+              className="hover:text-accent transition-colors font-medium cursor-pointer"
+            >
+              demonst 소개
+            </button>
+            <button
+              onClick={() => setLegalModal('terms')}
+              className="hover:text-accent transition-colors font-medium cursor-pointer"
+            >
+              이용약관
+            </button>
+            <button
+              onClick={() => setLegalModal('privacy')}
+              className="hover:text-accent transition-colors font-medium cursor-pointer"
+            >
+              개인정보처리방침
+            </button>
+            <button
+              onClick={() => setLegalModal('contact')}
+              className="hover:text-accent transition-colors font-medium cursor-pointer"
+            >
+              문의하기
+            </button>
           </div>
         </footer>
       </div>
+
+      {/* Legal Modals (Terms / Privacy / Contact) */}
+      <LegalModals
+        type={legalModal}
+        onClose={() => setLegalModal(null)}
+      />
 
       {/* Product Detail Modal */}
       {selectedProduct && (

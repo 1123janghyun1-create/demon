@@ -121,7 +121,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
             <label className="block text-xs font-bold text-fg mb-1">현재 빌딩 중인 프로젝트</label>
             <input
               type="text"
-              placeholder="예: CareerFlow, 반짝포지, demon"
+              placeholder="예: CareerFlow, 반짝포지, demonst"
               value={buildingApp}
               onChange={(e) => setBuildingApp(e.target.value)}
               className="w-full rounded-btn border border-border bg-surface-2 px-3 py-2 text-xs text-fg focus:border-accent focus:outline-none"

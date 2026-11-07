@@ -98,5 +98,5 @@ export interface DirectMessage {
   isMine: boolean;
 }
 
-export type NavTab = 'test' | 'builders' | 'leaderboard' | 'submit' | 'community';
+export type NavTab = 'test' | 'builders' | 'leaderboard' | 'submit' | 'community' | 'about';
 export type FilterSort = 'newest' | 'feedback';

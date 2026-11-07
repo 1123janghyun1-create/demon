@@ -1,10 +1,18 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import initialProducts from './data/products.json';
 import initialCommunity from './data/community_data.json';
-import initialLeaderboard from './data/leaderboard_data.json';
 import initialQuotes from './data/quotes_data.json';
 import { Product, Feedback, CommunityPost, LeaderboardUser, Quote, NavTab, FilterSort, UserProfile, Builder, DirectMessage } from './types';
 import { supabase, isSupabaseConfigured, signOutUser } from './lib/supabase';
+import {
+  fetchProductsFromDB,
+  insertProductToDB,
+  fetchFeedbacksFromDB,
+  insertFeedbackToDB,
+  fetchBuildersFromDB,
+  upsertBuilderToDB,
+  fetchCommunityPostsFromDB,
+  insertCommunityPostToDB,
+} from './lib/database';
 
 interface AppContextType {
   products: Product[];
@@ -16,6 +24,7 @@ interface AppContextType {
   addFeedback: (productId: string, feedback: Omit<Feedback, 'id' | 'createdAt'>) => void;
   user: UserProfile;
   loginAsDemoUser: () => void;
+  loginWithCustomEmail: (customUser: UserProfile) => void;
   logout: () => void;
   requireAuth: (callback: () => void, reason?: string) => void;
   isLoginModalOpen: boolean;
@@ -50,19 +59,15 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // User profile state - safely persisted in localStorage
+  // User profile state
   const [user, setUser] = useState<UserProfile>(() => {
     try {
       const saved = localStorage.getItem('demon_user');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object') {
-          return parsed;
-        }
+        if (parsed && typeof parsed === 'object') return parsed;
       }
-    } catch (e) {
-      console.warn('Failed to parse demon_user:', e);
-    }
+    } catch {}
     return {
       id: '',
       email: '',
@@ -72,7 +77,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       bio: '새로운 사이드 프로젝트를 코딩하는 메이커입니다.',
       buildingApp: '',
       tags: ['개발자', 'SaaS', 'AI'],
-      isLoggedIn: false
+      isLoggedIn: false,
     };
   });
 
@@ -103,7 +108,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Builders State - Only users who have logged in!
+  // Builders State
   const [builders, setBuilders] = useState<Builder[]>(() => {
     const saved = localStorage.getItem('demon_builders');
     return saved ? JSON.parse(saved) : [];
@@ -129,31 +134,63 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [filterSort, setFilterSort] = useState<FilterSort>('newest');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Sync Supabase Database to Local State on App Startup
+  useEffect(() => {
+    if (isSupabaseConfigured) {
+      // 1. Fetch products from Supabase
+      fetchProductsFromDB().then((dbProducts) => {
+        if (dbProducts !== null) {
+          setProducts(dbProducts);
+        }
+      });
+
+      // 2. Fetch feedbacks from Supabase
+      fetchFeedbacksFromDB().then((dbFeedbacks) => {
+        if (dbFeedbacks !== null) {
+          setFeedbacks(dbFeedbacks);
+        }
+      });
+
+      // 3. Fetch builders from Supabase
+      fetchBuildersFromDB().then((dbBuilders) => {
+        if (dbBuilders !== null && dbBuilders.length > 0) {
+          setBuilders(dbBuilders);
+        }
+      });
+
+      // 4. Fetch community posts from Supabase
+      fetchCommunityPostsFromDB().then((dbPosts) => {
+        if (dbPosts !== null && dbPosts.length > 0) {
+          setCommunityPosts(dbPosts);
+        }
+      });
+    }
+  }, []);
+
   // Sync Logged-in User into Builders list
   const syncUserToBuilders = useCallback((currentUser: UserProfile) => {
     if (!currentUser.isLoggedIn || !currentUser.id) return;
 
-    setBuilders(prev => {
-      const idx = prev.findIndex(b => b.id === currentUser.id || (currentUser.email && b.email === currentUser.email));
+    setBuilders((prev) => {
+      const idx = prev.findIndex((b) => b.id === currentUser.id || (currentUser.email && b.email === currentUser.email));
+      let updatedList: Builder[];
+
       if (idx !== -1) {
-        // Update existing builder
-        const updated = [...prev];
-        updated[idx] = {
-          ...updated[idx],
+        updatedList = [...prev];
+        updatedList[idx] = {
+          ...updatedList[idx],
           name: currentUser.name,
           email: currentUser.email,
           avatar: currentUser.avatar,
-          role: currentUser.role || updated[idx].role || '인디 메이커',
-          bio: currentUser.bio || updated[idx].bio || '새로운 가치를 코딩하는 메이커입니다.',
-          buildingApp: currentUser.buildingApp || updated[idx].buildingApp || '',
-          tags: currentUser.tags || updated[idx].tags || ['개발자'],
-          github: currentUser.github || updated[idx].github,
-          twitter: currentUser.twitter || updated[idx].twitter,
-          online: true
+          role: currentUser.role || updatedList[idx].role || '인디 메이커',
+          bio: currentUser.bio || updatedList[idx].bio || '새로운 가치를 코딩하는 메이커입니다.',
+          buildingApp: currentUser.buildingApp || updatedList[idx].buildingApp || '',
+          tags: currentUser.tags || updatedList[idx].tags || ['개발자'],
+          github: currentUser.github || updatedList[idx].github,
+          twitter: currentUser.twitter || updatedList[idx].twitter,
+          online: true,
         };
-        return updated;
       } else {
-        // Add new logged-in builder
         const newBuilder: Builder = {
           id: currentUser.id,
           name: currentUser.name,
@@ -169,53 +206,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           online: true,
           github: currentUser.github,
           twitter: currentUser.twitter,
-          joinedAt: '방금'
+          joinedAt: '방금',
         };
-        return [newBuilder, ...prev];
+        updatedList = [newBuilder, ...prev];
       }
+
+      // Upsert to Supabase DB in background
+      const targetBuilder = updatedList.find((b) => b.id === currentUser.id);
+      if (targetBuilder) {
+        upsertBuilderToDB(targetBuilder).catch(() => {});
+      }
+
+      return updatedList;
     });
   }, []);
 
-  // Robust Supabase Auth Listener (Prevents Accidental Logout)
+  // Supabase Auth Listener
   useEffect(() => {
     if (isSupabaseConfigured && supabase) {
-      // 1. Initial check for existing active session
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session?.user) {
           const u = session.user;
-          setUser(prev => {
+          setUser((prev) => {
             const updated: UserProfile = {
               ...prev,
               id: u.id,
               email: u.email,
               name: u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split('@')[0] || prev.name || '구글 사용자',
               avatar: u.user_metadata?.avatar_url || prev.avatar || '/demon-mascot.png',
-              isLoggedIn: true
+              isLoggedIn: true,
             };
             syncUserToBuilders(updated);
             return updated;
           });
+
+          if (window.location.hash.includes('access_token')) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
         }
       });
 
-      // 2. Auth state change listener - ONLY log out on explicit 'SIGNED_OUT'
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
         if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') && session?.user) {
           const u = session.user;
-          setUser(prev => {
+          setUser((prev) => {
             const updated: UserProfile = {
               ...prev,
               id: u.id,
               email: u.email,
               name: u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split('@')[0] || prev.name || '구글 사용자',
               avatar: u.user_metadata?.avatar_url || prev.avatar || '/demon-mascot.png',
-              isLoggedIn: true
+              isLoggedIn: true,
             };
             syncUserToBuilders(updated);
             return updated;
           });
+
+          if (window.location.hash.includes('access_token')) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
         } else if (event === 'SIGNED_OUT') {
-          // Explicit logout only!
           setUser({
             id: '',
             email: '',
@@ -225,7 +275,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             bio: '새로운 사이드 프로젝트를 코딩하는 메이커입니다.',
             buildingApp: '',
             tags: ['개발자', 'SaaS', 'AI'],
-            isLoggedIn: false
+            isLoggedIn: false,
           });
         }
       });
@@ -236,7 +286,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [syncUserToBuilders]);
 
-  // Persist user and sync builders
+  // Persist local state
   useEffect(() => {
     localStorage.setItem('demon_user', JSON.stringify(user));
     if (user.isLoggedIn) {
@@ -278,7 +328,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [darkMode]);
 
-  const toggleDarkMode = () => setDarkMode(prev => !prev);
+  const toggleDarkMode = () => setDarkMode((prev) => !prev);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -299,37 +349,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loginAsDemoUser = () => {
     const demoUser: UserProfile = {
       id: 'demo-google-user',
-      email: 'builder@demon.io',
-      name: '데몬 메이커',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80',
-      role: '1인 풀스택 빌더',
-      bio: '문제를 코드로 해결하고 demon에서 유저 반응을 검증하고 있습니다.',
-      buildingApp: 'demon Launchpad',
+      email: 'demonst1004@gmail.com',
+      name: 'demonst',
+      avatar: '/demon-mascot.png',
+      role: 'demonst 메이커',
+      bio: 'demonst 사이드 프로젝트 메이커 커뮤니티 빌더입니다.',
+      buildingApp: 'demonst',
       tags: ['개발자', 'Next.js', 'AI', 'SaaS'],
       github: 'https://github.com',
-      isLoggedIn: true
+      isLoggedIn: true,
     };
     setUser(demoUser);
+    localStorage.setItem('demon_user', JSON.stringify(demoUser));
     syncUserToBuilders(demoUser);
+    setIsLoginModalOpen(false);
+  };
+
+  const loginWithCustomEmail = (customUser: UserProfile) => {
+    setUser(customUser);
+    localStorage.setItem('demon_user', JSON.stringify(customUser));
+    syncUserToBuilders(customUser);
     setIsLoginModalOpen(false);
   };
 
   const logout = async () => {
     await signOutUser();
-    setUser({
+    const guestUser: UserProfile = {
       id: '',
       email: '',
       name: '게스트',
       avatar: '/demon-mascot.png',
-      isLoggedIn: false
-    });
+      isLoggedIn: false,
+    };
+    setUser(guestUser);
+    localStorage.setItem('demon_user', JSON.stringify(guestUser));
     showToast('로그아웃되었습니다.');
   };
 
-  // Update own user profile
+  // Update own user profile (Local + Supabase DB)
   const updateUserProfile = (updates: Partial<UserProfile>) => {
     const updatedUser = { ...user, ...updates };
     setUser(updatedUser);
+    localStorage.setItem('demon_user', JSON.stringify(updatedUser));
     syncUserToBuilders(updatedUser);
   };
 
@@ -341,18 +402,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return;
       }
 
-      setBuilders(prev => prev.map(b => {
-        if (b.id === builderId) {
-          const nextFollowing = !b.isFollowing;
-          showToast(nextFollowing ? `✨ ${b.name} 님을 팔로우했습니다!` : `${b.name} 님을 언팔로우했습니다.`);
-          return {
-            ...b,
-            isFollowing: nextFollowing,
-            followersCount: nextFollowing ? b.followersCount + 1 : Math.max(0, b.followersCount - 1)
-          };
-        }
-        return b;
-      }));
+      setBuilders((prev) =>
+        prev.map((b) => {
+          if (b.id === builderId) {
+            const nextFollowing = !b.isFollowing;
+            showToast(nextFollowing ? `✨ ${b.name} 님을 팔로우했습니다!` : `${b.name} 님을 언팔로우했습니다.`);
+            const updated = {
+              ...b,
+              isFollowing: nextFollowing,
+              followersCount: nextFollowing ? b.followersCount + 1 : Math.max(0, b.followersCount - 1),
+            };
+            upsertBuilderToDB(updated).catch(() => {});
+            return updated;
+          }
+          return b;
+        })
+      );
     }, '빌더를 팔로우하려면 먼저 로그인이 필요합니다.');
   };
 
@@ -364,17 +429,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       receiverId: builderId,
       text: text.trim(),
       timestamp: '방금',
-      isMine: true
+      isMine: true,
     };
 
-    setDmMessages(prev => ({
+    setDmMessages((prev) => ({
       ...prev,
-      [builderId]: [...(prev[builderId] || []), newMsg]
+      [builderId]: [...(prev[builderId] || []), newMsg],
     }));
 
-    // Simulated auto-reply after 1.2s if sending to someone else
     if (builderId !== user.id) {
-      const targetBuilder = builders.find(b => b.id === builderId);
+      const targetBuilder = builders.find((b) => b.id === builderId);
       setTimeout(() => {
         const replyMsg: DirectMessage = {
           id: 'dm-reply-' + Date.now(),
@@ -382,16 +446,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           receiverId: user.id || 'me',
           text: `안녕하세요 ${user.name}님! 메시지 확인했습니다. ${targetBuilder?.buildingApp ? `'${targetBuilder.buildingApp}' 관련 이야기` : '프로덕트 피드백'} 편하게 나눠요 😊`,
           timestamp: '방금',
-          isMine: false
+          isMine: false,
         };
-        setDmMessages(prev => ({
+        setDmMessages((prev) => ({
           ...prev,
-          [builderId]: [...(prev[builderId] || []), replyMsg]
+          [builderId]: [...(prev[builderId] || []), replyMsg],
         }));
       }, 1200);
     }
   };
 
+  // Add Feedback (Local + Supabase DB)
   const addFeedback = (productId: string, fb: Omit<Feedback, 'id' | 'createdAt'>) => {
     const newFb: Feedback = {
       ...fb,
@@ -399,24 +464,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: '방금 전',
     };
 
-    setFeedbacks(prev => ({
+    setFeedbacks((prev) => ({
       ...prev,
-      [productId]: [newFb, ...(prev[productId] || [])]
+      [productId]: [newFb, ...(prev[productId] || [])],
     }));
 
-    setProducts(prev => prev.map(p => {
-      if (p.id === productId || p.slug === productId) {
-        return { ...p, feedbackCount: p.feedbackCount + 1 };
-      }
-      return p;
-    }));
+    setProducts((prev) =>
+      prev.map((p) => {
+        if (p.id === productId || p.slug === productId) {
+          return { ...p, feedbackCount: p.feedbackCount + 1 };
+        }
+        return p;
+      })
+    );
 
-    setLeaderboard(prev => {
+    // Save to Supabase DB in background
+    insertFeedbackToDB(newFb).catch((err) => console.warn('Supabase feedback save error:', err));
+
+    setLeaderboard((prev) => {
       const authorName = fb.author || '익명 테스터';
-      const existing = prev.find(u => u.name === authorName);
+      const existing = prev.find((u) => u.name === authorName);
       let updated: LeaderboardUser[];
       if (existing) {
-        updated = prev.map(u => u.name === authorName ? { ...u, feedbackCount: u.feedbackCount + 1 } : u);
+        updated = prev.map((u) => (u.name === authorName ? { ...u, feedbackCount: u.feedbackCount + 1 } : u));
       } else {
         updated = [
           ...prev,
@@ -424,8 +494,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             rank: prev.length + 1,
             name: authorName,
             avatar: fb.avatar || '/demon-mascot.png',
-            feedbackCount: 1
-          }
+            feedbackCount: 1,
+          },
         ];
       }
       updated.sort((a, b) => b.feedbackCount - a.feedbackCount);
@@ -435,6 +505,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('🎉 메이커에게 피드백이 성공적으로 전달되었습니다!');
   };
 
+  // Add Community Post (Local + Supabase DB)
   const addCommunityPost = (post: Omit<CommunityPost, 'id' | 'timeAgo' | 'likes' | 'comments'>) => {
     const newPost: CommunityPost = {
       ...post,
@@ -442,26 +513,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       timeAgo: '방금 전',
       likes: 0,
       comments: 0,
-      userLiked: false
+      userLiked: false,
     };
-    setCommunityPosts(prev => [newPost, ...prev]);
+    setCommunityPosts((prev) => [newPost, ...prev]);
+
+    // Save to Supabase DB in background
+    insertCommunityPostToDB(newPost).catch((err) => console.warn('Supabase community save error:', err));
+
     showToast('🚀 커뮤니티에 새 글이 등록되었습니다!');
   };
 
   const toggleLikePost = (postId: string) => {
-    setCommunityPosts(prev => prev.map(p => {
-      if (p.id === postId) {
-        const isLiked = p.userLiked;
-        return {
-          ...p,
-          likes: isLiked ? p.likes - 1 : p.likes + 1,
-          userLiked: !isLiked
-        };
-      }
-      return p;
-    }));
+    setCommunityPosts((prev) =>
+      prev.map((p) => {
+        if (p.id === postId) {
+          const isLiked = p.userLiked;
+          return {
+            ...p,
+            likes: isLiked ? p.likes - 1 : p.likes + 1,
+            userLiked: !isLiked,
+          };
+        }
+        return p;
+      })
+    );
   };
 
+  // Add Product (Local + Supabase DB!)
   const addProduct = (newApp: Omit<Product, 'id' | 'slug' | 'feedbackCount' | 'createdAt'>) => {
     const slug = newApp.title.toLowerCase().replace(/[^a-z0-9가-힣]+/g, '-').slice(0, 30);
     const created: Product = {
@@ -470,15 +548,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       slug: slug || 'app-' + Date.now(),
       feedbackCount: 0,
       createdAt: '방금 전',
-      isNew: true
+      isNew: true,
     };
-    setProducts(prev => [created, ...prev]);
+
+    // 1. Immediate UI update
+    setProducts((prev) => [created, ...prev]);
+
+    // 2. Permanent Supabase DB insert!
+    insertProductToDB(created)
+      .then((success) => {
+        if (success) {
+          console.log('✅ Supabase DB에 제품 영구 저장 완료:', created.title);
+        } else {
+          console.log('ℹ️ 로컬스토리지에 저장됨 (Supabase 테이블 생성 후 자동 동기화 가능)');
+        }
+      })
+      .catch((err) => console.warn('Supabase insertProduct error:', err));
+
     showToast('✨ 제품이 성공적으로 등록되었습니다!');
     return created;
   };
 
   const nextQuote = () => {
-    setQuoteIdx(prev => (prev + 1) % quotes.length);
+    setQuoteIdx((prev) => (prev + 1) % quotes.length);
   };
 
   return (
@@ -493,6 +585,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addFeedback,
         user,
         loginAsDemoUser,
+        loginWithCustomEmail,
         logout,
         requireAuth,
         isLoginModalOpen,
