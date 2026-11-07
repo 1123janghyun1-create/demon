@@ -14,6 +14,13 @@ function escapeXml(unsafe) {
     .replace(/'/g, '&apos;');
 }
 
+function normalizeImageUrl(url, baseUrl) {
+  if (!url) return '';
+  if (url.startsWith('data:')) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+}
+
 export default async function handler(req, res) {
   let products = [];
   let builders = [];
@@ -42,38 +49,44 @@ export default async function handler(req, res) {
     <priority>1.0</priority>
     <image:image>
       <image:loc>${siteBaseUrl}/demon-mascot.png</image:loc>
-      <image:title>demonst 마스코트</image:title>
-      <image:caption>인디 메이커를 위한 앱 테스트 &amp; 런치패드 플랫폼</image:caption>
+      <image:title>demonst - 10초 런치패드 &amp; 앱 테스팅 플랫폼</image:title>
+      <image:caption>인디 메이커와 1인 개발자를 위한 사이드 프로젝트 피드백 &amp; 테스트 플랫폼</image:caption>
     </image:image>
   </url>
 
-  <!-- 주요 카테고리 & 탭 페이지 -->
+  <!-- 주요 카테고리 & 탭 페이지 (Google Search Console 표준: '#' 대신 '?tab=' 쿼리 사용) -->
   <url>
-    <loc>${siteBaseUrl}/#test</loc>
+    <loc>${siteBaseUrl}/?tab=test</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>${siteBaseUrl}/#builders</loc>
+    <loc>${siteBaseUrl}/?tab=builders</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>${siteBaseUrl}/#leaderboard</loc>
+    <loc>${siteBaseUrl}/?tab=leaderboard</loc>
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>${siteBaseUrl}/#community</loc>
+    <loc>${siteBaseUrl}/?tab=community</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>${siteBaseUrl}/#about</loc>
+    <loc>${siteBaseUrl}/?tab=submit</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${siteBaseUrl}/?tab=about</loc>
     <lastmod>${today}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -89,17 +102,19 @@ export default async function handler(req, res) {
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
 `;
-    if (p.screenshot) {
+    const screenshotUrl = normalizeImageUrl(p.screenshot, siteBaseUrl);
+    if (screenshotUrl) {
       xml += `    <image:image>
-      <image:loc>${escapeXml(p.screenshot)}</image:loc>
+      <image:loc>${escapeXml(screenshotUrl)}</image:loc>
       <image:title>${escapeXml(p.title)} 스크린샷</image:title>
       <image:caption>${escapeXml(p.tagline || p.title)}</image:caption>
     </image:image>
 `;
     }
-    if (p.icon) {
+    const iconUrl = normalizeImageUrl(p.icon, siteBaseUrl);
+    if (iconUrl) {
       xml += `    <image:image>
-      <image:loc>${escapeXml(p.icon)}</image:loc>
+      <image:loc>${escapeXml(iconUrl)}</image:loc>
       <image:title>${escapeXml(p.title)} 로고</image:title>
     </image:image>
 `;
@@ -117,9 +132,10 @@ export default async function handler(req, res) {
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
 `;
-    if (b.avatar) {
+    const avatarUrl = normalizeImageUrl(b.avatar, siteBaseUrl);
+    if (avatarUrl) {
       xml += `    <image:image>
-      <image:loc>${escapeXml(b.avatar)}</image:loc>
+      <image:loc>${escapeXml(avatarUrl)}</image:loc>
       <image:title>${escapeXml(b.name)} 빌더 프로필</image:title>
       <image:caption>${escapeXml(b.role || '인디 메이커')}</image:caption>
     </image:image>
@@ -129,9 +145,10 @@ export default async function handler(req, res) {
 `;
   });
 
-  xml += `</urlset>`;
+  xml += `</urlset>
+`;
 
   res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-  res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=3600');
-  return res.status(200).send(xml);
+  res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate');
+  res.status(200).send(xml);
 }

@@ -9,38 +9,44 @@
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://demonst.vercel.app/demon-mascot.png</image:loc>
-      <image:title>demonst 마스코트</image:title>
-      <image:caption>인디 메이커를 위한 앱 테스트 &amp; 런치패드 플랫폼</image:caption>
+      <image:title>demonst - 10초 런치패드 &amp; 앱 테스팅 플랫폼</image:title>
+      <image:caption>인디 메이커와 1인 개발자를 위한 사이드 프로젝트 피드백 &amp; 테스트 플랫폼</image:caption>
     </image:image>
   </url>
 
-  <!-- 2. 주요 탭 페이지 -->
+  <!-- 2. 주요 탭 페이지 (Google Search Console 표준: '#' 대신 '?tab=' 쿼리 사용) -->
   <url>
-    <loc>https://demonst.vercel.app/#test</loc>
+    <loc>https://demonst.vercel.app/?tab=test</loc>
     <lastmod>2026-11-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://demonst.vercel.app/#builders</loc>
+    <loc>https://demonst.vercel.app/?tab=builders</loc>
     <lastmod>2026-11-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://demonst.vercel.app/#leaderboard</loc>
+    <loc>https://demonst.vercel.app/?tab=leaderboard</loc>
     <lastmod>2026-11-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://demonst.vercel.app/#community</loc>
+    <loc>https://demonst.vercel.app/?tab=community</loc>
     <lastmod>2026-11-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://demonst.vercel.app/#about</loc>
+    <loc>https://demonst.vercel.app/?tab=submit</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?tab=about</loc>
     <lastmod>2026-11-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
