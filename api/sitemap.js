@@ -97,7 +97,7 @@ export default async function handler(req, res) {
   products.forEach((p) => {
     const pUrl = `${siteBaseUrl}/?product=${encodeURIComponent(p.id)}`;
     xml += `  <url>
-    <loc>${pUrl}</loc>
+    <loc>${escapeXml(pUrl)}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
@@ -127,7 +127,7 @@ export default async function handler(req, res) {
   builders.forEach((b) => {
     const bUrl = `${siteBaseUrl}/?builder=${encodeURIComponent(b.id)}`;
     xml += `  <url>
-    <loc>${bUrl}</loc>
+    <loc>${escapeXml(bUrl)}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
