@@ -7,10 +7,10 @@ import path from 'path';
 
 // Memory fallback cache in case filesystem is completely read-only
 let memoryCache = {
-  products: null,
-  builders: null,
-  feedbacks: null,
-  community: null,
+  products: [],
+  builders: [],
+  feedbacks: {},
+  community: [],
   messages: {},
   notifications: [],
 };
@@ -29,7 +29,7 @@ function getFilePath(tableName) {
 }
 
 function readData(tableName, defaultValue = []) {
-  if (memoryCache[tableName]) {
+  if (memoryCache[tableName] && (Array.isArray(memoryCache[tableName]) ? memoryCache[tableName].length > 0 : Object.keys(memoryCache[tableName]).length > 0)) {
     return memoryCache[tableName];
   }
 
@@ -119,6 +119,22 @@ export default async function handler(req, res) {
       }
 
       const { table, action, data } = body || {};
+
+      if (action === 'reset_all' || table === 'reset_all') {
+        memoryCache = {
+          products: [],
+          builders: [],
+          feedbacks: {},
+          community: [],
+          messages: {},
+          notifications: [],
+        };
+        writeData('products', []);
+        writeData('builders', []);
+        writeData('feedbacks', {});
+        writeData('community', []);
+        return res.status(200).json({ success: true, message: 'All tables reset' });
+      }
 
       if (!table || !action) {
         return res.status(400).json({ success: false, message: 'Missing table or action' });
