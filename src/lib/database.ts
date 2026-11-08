@@ -90,11 +90,11 @@ export async function fetchProductsFromDB(): Promise<Product[] | null> {
 
   // Multi-account / Multi-browser fallback via /api/sync
   const apiProducts = await syncApiGet('products');
-  if (Array.isArray(apiProducts) && apiProducts.length > 0) {
+  if (Array.isArray(apiProducts)) {
     return apiProducts;
   }
 
-  return supaProducts;
+  return supaProducts || [];
 }
 
 export async function insertProductToDB(product: Product): Promise<boolean> {
@@ -293,11 +293,11 @@ export async function fetchFeedbacksFromDB(): Promise<Record<string, Feedback[]>
   }
 
   const apiFeedbacks = await syncApiGet('feedbacks');
-  if (apiFeedbacks && typeof apiFeedbacks === 'object' && Object.keys(apiFeedbacks).length > 0) {
+  if (apiFeedbacks && typeof apiFeedbacks === 'object') {
     return apiFeedbacks;
   }
 
-  return supaMap;
+  return supaMap || {};
 }
 
 export async function insertFeedbackToDB(feedback: Feedback): Promise<boolean> {
@@ -381,11 +381,11 @@ export async function fetchBuildersFromDB(): Promise<Builder[] | null> {
   }
 
   const apiBuilders = await syncApiGet('builders');
-  if (Array.isArray(apiBuilders) && apiBuilders.length > 0) {
+  if (Array.isArray(apiBuilders)) {
     return apiBuilders;
   }
 
-  return supaBuilders;
+  return supaBuilders || [];
 }
 
 export async function upsertBuilderToDB(builder: Builder): Promise<boolean> {
@@ -461,11 +461,11 @@ export async function fetchCommunityPostsFromDB(): Promise<CommunityPost[] | nul
   }
 
   const apiPosts = await syncApiGet('community');
-  if (Array.isArray(apiPosts) && apiPosts.length > 0) {
+  if (Array.isArray(apiPosts)) {
     return apiPosts;
   }
 
-  return supaPosts;
+  return supaPosts || [];
 }
 
 export async function insertCommunityPostToDB(post: CommunityPost): Promise<boolean> {

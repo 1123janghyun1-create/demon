@@ -92,6 +92,23 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Hard reset migration check: completely resets stale local data when platform is cleared
+  const DEMON_STORAGE_VERSION = 'v5_hard_reset_all_20261108';
+  try {
+    const curVer = localStorage.getItem('demon_storage_version');
+    if (curVer !== DEMON_STORAGE_VERSION) {
+      localStorage.removeItem('demon_products');
+      localStorage.removeItem('demon_feedbacks');
+      localStorage.removeItem('demon_builders');
+      localStorage.removeItem('demon_community');
+      localStorage.removeItem('demon_leaderboard');
+      localStorage.removeItem('demon_dm_messages');
+      localStorage.removeItem('demon_notifications');
+      localStorage.removeItem('demon_upvoted_products');
+      localStorage.setItem('demon_storage_version', DEMON_STORAGE_VERSION);
+    }
+  } catch {}
+
   // User profile state
   const [user, setUser] = useState<UserProfile>(() => {
     try {
@@ -204,16 +221,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (Array.isArray(parsed)) return parsed;
       }
     } catch {}
-    return [
-      {
-        id: 'notif-welcome',
-        type: 'system',
-        title: 'demonst에 오신 것을 환영합니다! 🎉',
-        message: '새로운 프로젝트를 등록하고 동료 메이커들과 1:1 DM 및 테스트 피드백을 나눠보세요.',
-        createdAt: '방금 전',
-        read: false,
-      },
-    ];
+    return [];
   });
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isDmInboxOpen, setIsDmInboxOpen] = useState(false);
@@ -361,28 +369,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     // 1. Fetch products from DB / API
     fetchProductsFromDB().then((dbProducts) => {
-      if (dbProducts !== null && dbProducts.length > 0) {
+      if (dbProducts !== null) {
         setProducts(dbProducts);
       }
     });
 
     // 2. Fetch feedbacks from DB / API
     fetchFeedbacksFromDB().then((dbFeedbacks) => {
-      if (dbFeedbacks !== null && Object.keys(dbFeedbacks).length > 0) {
+      if (dbFeedbacks !== null) {
         setFeedbacks(dbFeedbacks);
       }
     });
 
     // 3. Fetch builders from DB / API
     fetchBuildersFromDB().then((dbBuilders) => {
-      if (dbBuilders !== null && dbBuilders.length > 0) {
+      if (dbBuilders !== null) {
         setBuilders(dbBuilders);
       }
     });
 
     // 4. Fetch community posts from DB / API
     fetchCommunityPostsFromDB().then((dbPosts) => {
-      if (dbPosts !== null && dbPosts.length > 0) {
+      if (dbPosts !== null) {
         setCommunityPosts(dbPosts);
       }
     });
