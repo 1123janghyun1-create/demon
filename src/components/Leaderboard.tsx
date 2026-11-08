@@ -215,32 +215,49 @@ export const Leaderboard: React.FC = () => {
       </div>
 
       {/* ============================================================ */}
-      {/* Top 3 Podium Cards                                            */}
+      {/* Top Podium Cards (Dynamic 1 ~ 3 registered members)          */}
       {/* ============================================================ */}
-      <div className="mb-8 grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-        {top3.map((maker, idx) => {
-          const podiumMeta = [
-            {
-              border: 'border-amber-400/50 bg-gradient-to-b from-amber-500/10 via-surface to-surface',
-              badge: '🥇 AI 1위',
-              badgeColor: 'text-amber-500 border-amber-500/30 bg-amber-500/10',
-              ring: 'ring-amber-400 ring-2',
-            },
-            {
-              border: 'border-slate-300/60 bg-gradient-to-b from-slate-400/10 via-surface to-surface',
-              badge: '🥈 AI 2위',
-              badgeColor: 'text-slate-500 border-slate-400/30 bg-slate-400/10',
-              ring: 'ring-slate-300 ring-2',
-            },
-            {
-              border: 'border-amber-700/40 bg-gradient-to-b from-amber-700/10 via-surface to-surface',
-              badge: '🥉 AI 3위',
-              badgeColor: 'text-amber-700 border-amber-700/30 bg-amber-700/10',
-              ring: 'ring-amber-700 ring-2',
-            },
-          ][idx];
+      {rankedUsers.length === 0 ? (
+        <div className="rounded-card border border-border bg-surface p-12 text-center shadow-card mb-8">
+          <Trophy className="mx-auto w-12 h-12 text-fg-muted/40 mb-3" />
+          <h3 className="text-base font-bold text-fg">아직 활동 중인 demonst 정식 가입자가 없습니다</h3>
+          <p className="text-xs text-fg-muted mt-1 max-w-md mx-auto">
+            가입 후 첫 프로젝트를 런칭하거나 동료 메이커의 앱에 피드백을 남겨 리더보드 1위에 도전해보세요!
+          </p>
+        </div>
+      ) : (
+        <div className={`mb-8 grid grid-cols-1 ${
+          top3.length === 1 ? 'sm:grid-cols-1 max-w-sm mx-auto' : top3.length === 2 ? 'sm:grid-cols-2 max-w-2xl mx-auto' : 'sm:grid-cols-3'
+        } gap-3.5`}>
+          {top3.map((maker, idx) => {
+            const podiumMetaList = [
+              {
+                border: 'border-amber-400/50 bg-gradient-to-b from-amber-500/10 via-surface to-surface',
+                badge: '🥇 AI 1위',
+                badgeColor: 'text-amber-500 border-amber-500/30 bg-amber-500/10',
+                ring: 'ring-amber-400 ring-2',
+              },
+              {
+                border: 'border-slate-300/60 bg-gradient-to-b from-slate-400/10 via-surface to-surface',
+                badge: '🥈 AI 2위',
+                badgeColor: 'text-slate-500 border-slate-400/30 bg-slate-400/10',
+                ring: 'ring-slate-300 ring-2',
+              },
+              {
+                border: 'border-amber-700/40 bg-gradient-to-b from-amber-700/10 via-surface to-surface',
+                badge: '🥉 AI 3위',
+                badgeColor: 'text-amber-700 border-amber-700/30 bg-amber-700/10',
+                ring: 'ring-amber-700 ring-2',
+              },
+            ];
+            const podiumMeta = podiumMetaList[idx] || {
+              border: 'border-border bg-surface',
+              badge: `AI ${idx + 1}위`,
+              badgeColor: 'text-fg-muted border-border bg-surface-2',
+              ring: 'ring-border ring-1',
+            };
 
-          const isMe = user.isLoggedIn && (maker.name === user.name || (user.email && maker.name === user.email));
+            const isMe = user.isLoggedIn && (maker.name === user.name || (user.email && maker.name === user.email));
 
           return (
             <div
@@ -316,6 +333,7 @@ export const Leaderboard: React.FC = () => {
           );
         })}
       </div>
+      )}
 
       {/* ============================================================ */}
       {/* Full Leaderboard Table                                        */}

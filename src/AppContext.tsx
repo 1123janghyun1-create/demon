@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import initialProducts from './data/products.json';
+import initialBuilders from './data/builders_data.json';
+import initialFeedbacks from './data/feedbacks_data.json';
 import initialCommunity from './data/community_data.json';
 import initialQuotes from './data/quotes_data.json';
 import { Product, Feedback, CommunityPost, LeaderboardUser, Quote, NavTab, FilterSort, UserProfile, Builder, DirectMessage, AppNotification } from './types';
@@ -116,24 +119,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);
 
   const [products, setProducts] = useState<Product[]>(() => {
-    const saved = localStorage.getItem('demon_products');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('demon_products');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return (initialProducts as Product[]) || [];
   });
 
   const [currentTab, setCurrentTab] = useState<NavTab>('test');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const [feedbacks, setFeedbacks] = useState<Record<string, Feedback[]>>(() => {
-    const saved = localStorage.getItem('demon_feedbacks');
-    return saved ? JSON.parse(saved) : {};
+    try {
+      const saved = localStorage.getItem('demon_feedbacks');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) return parsed;
+      }
+    } catch {}
+    return (initialFeedbacks as Record<string, Feedback[]>) || {};
   });
 
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>(() => {
-    const saved = localStorage.getItem('demon_community');
-    if (saved) {
-      try {
+    try {
+      const saved = localStorage.getItem('demon_community');
+      if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed.filter(
             (p: any) =>
               p.id !== 'c-welcome' &&
@@ -141,20 +156,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               !p.title?.includes('demon')
           );
         }
-      } catch {}
-    }
-    return [];
+      }
+    } catch {}
+    return (initialCommunity as CommunityPost[]) || [];
   });
 
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>(() => {
-    const saved = localStorage.getItem('demon_leaderboard');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('demon_leaderboard');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
 
   // Builders State
   const [builders, setBuilders] = useState<Builder[]>(() => {
-    const saved = localStorage.getItem('demon_builders');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('demon_builders');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return (initialBuilders as Builder[]) || [];
   });
 
   // Active DM Chat Modal
@@ -162,8 +187,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Direct Messages History
   const [dmMessages, setDmMessages] = useState<Record<string, DirectMessage[]>>(() => {
-    const saved = localStorage.getItem('demon_dm_messages');
-    return saved ? JSON.parse(saved) : {};
+    try {
+      const saved = localStorage.getItem('demon_dm_messages');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
   });
 
   // Notifications State
@@ -328,37 +357,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch {}
   }, [selectedProduct]);
 
-  // Sync Supabase Database to Local State on App Startup
+  // Sync Supabase Database / Server API to Local State on App Startup
   useEffect(() => {
-    if (isSupabaseConfigured) {
-      // 1. Fetch products from Supabase
-      fetchProductsFromDB().then((dbProducts) => {
-        if (dbProducts !== null) {
-          setProducts(dbProducts);
-        }
-      });
+    // 1. Fetch products from DB / API
+    fetchProductsFromDB().then((dbProducts) => {
+      if (dbProducts !== null && dbProducts.length > 0) {
+        setProducts(dbProducts);
+      }
+    });
 
-      // 2. Fetch feedbacks from Supabase
-      fetchFeedbacksFromDB().then((dbFeedbacks) => {
-        if (dbFeedbacks !== null) {
-          setFeedbacks(dbFeedbacks);
-        }
-      });
+    // 2. Fetch feedbacks from DB / API
+    fetchFeedbacksFromDB().then((dbFeedbacks) => {
+      if (dbFeedbacks !== null && Object.keys(dbFeedbacks).length > 0) {
+        setFeedbacks(dbFeedbacks);
+      }
+    });
 
-      // 3. Fetch builders from Supabase
-      fetchBuildersFromDB().then((dbBuilders) => {
-        if (dbBuilders !== null && dbBuilders.length > 0) {
-          setBuilders(dbBuilders);
-        }
-      });
+    // 3. Fetch builders from DB / API
+    fetchBuildersFromDB().then((dbBuilders) => {
+      if (dbBuilders !== null && dbBuilders.length > 0) {
+        setBuilders(dbBuilders);
+      }
+    });
 
-      // 4. Fetch community posts from Supabase
-      fetchCommunityPostsFromDB().then((dbPosts) => {
-        if (dbPosts !== null && dbPosts.length > 0) {
-          setCommunityPosts(dbPosts);
-        }
-      });
-    }
+    // 4. Fetch community posts from DB / API
+    fetchCommunityPostsFromDB().then((dbPosts) => {
+      if (dbPosts !== null && dbPosts.length > 0) {
+        setCommunityPosts(dbPosts);
+      }
+    });
   }, []);
 
   // Sync Logged-in User into Builders list
@@ -566,44 +593,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Persist local state
   useEffect(() => {
-    localStorage.setItem('demon_user', JSON.stringify(user));
+    try {
+      localStorage.setItem('demon_user', JSON.stringify(user));
+    } catch {}
     if (user.isLoggedIn) {
       syncUserToBuilders(user);
     }
   }, [user, syncUserToBuilders]);
 
   useEffect(() => {
-    localStorage.setItem('demon_products', JSON.stringify(products));
+    try {
+      localStorage.setItem('demon_products', JSON.stringify(products));
+    } catch {}
   }, [products]);
 
   useEffect(() => {
-    localStorage.setItem('demon_feedbacks', JSON.stringify(feedbacks));
+    try {
+      localStorage.setItem('demon_feedbacks', JSON.stringify(feedbacks));
+    } catch {}
   }, [feedbacks]);
 
   useEffect(() => {
-    localStorage.setItem('demon_community', JSON.stringify(communityPosts));
+    try {
+      localStorage.setItem('demon_community', JSON.stringify(communityPosts));
+    } catch {}
   }, [communityPosts]);
 
   useEffect(() => {
-    localStorage.setItem('demon_leaderboard', JSON.stringify(leaderboard));
+    try {
+      localStorage.setItem('demon_leaderboard', JSON.stringify(leaderboard));
+    } catch {}
   }, [leaderboard]);
 
   useEffect(() => {
-    localStorage.setItem('demon_builders', JSON.stringify(builders));
+    try {
+      localStorage.setItem('demon_builders', JSON.stringify(builders));
+    } catch {}
   }, [builders]);
 
   useEffect(() => {
-    localStorage.setItem('demon_dm_messages', JSON.stringify(dmMessages));
+    try {
+      localStorage.setItem('demon_dm_messages', JSON.stringify(dmMessages));
+    } catch {}
   }, [dmMessages]);
 
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('demon_theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('demon_theme', 'light');
-    }
+    try {
+      if (darkMode) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('demon_theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('demon_theme', 'light');
+      }
+    } catch {}
   }, [darkMode]);
 
   const toggleDarkMode = () => setDarkMode((prev) => !prev);

@@ -25,10 +25,10 @@ export const AppList: React.FC = () => {
       const q = searchQuery.toLowerCase();
       list = list.filter(
         (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.tagline.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q) ||
-          p.author.toLowerCase().includes(q)
+          (p.title || '').toLowerCase().includes(q) ||
+          (p.tagline || '').toLowerCase().includes(q) ||
+          (p.category || '').toLowerCase().includes(q) ||
+          (p.author || '').toLowerCase().includes(q)
       );
     }
 

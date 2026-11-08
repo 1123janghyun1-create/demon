@@ -20,18 +20,20 @@ export const Builders: React.FC = () => {
   const filteredBuilders = useMemo(() => {
     return builders.filter(b => {
       // Role filter
-      if (filterRole !== 'all' && !b.tags.includes(filterRole) && !b.role.includes(filterRole)) {
+      const bTags = Array.isArray(b.tags) ? b.tags : [];
+      const bRole = b.role || '';
+      if (filterRole !== 'all' && !bTags.includes(filterRole) && !bRole.includes(filterRole)) {
         return false;
       }
       // Search filter
       if (search.trim()) {
         const q = search.toLowerCase();
         return (
-          b.name.toLowerCase().includes(q) ||
-          b.role.toLowerCase().includes(q) ||
-          b.bio.toLowerCase().includes(q) ||
+          (b.name || '').toLowerCase().includes(q) ||
+          bRole.toLowerCase().includes(q) ||
+          (b.bio || '').toLowerCase().includes(q) ||
           (b.buildingApp && b.buildingApp.toLowerCase().includes(q)) ||
-          b.tags.some(t => t.toLowerCase().includes(q))
+          bTags.some(t => (t || '').toLowerCase().includes(q))
         );
       }
       return true;

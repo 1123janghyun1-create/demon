@@ -1,1 +1,24 @@
-[]
+[
+  {
+    "id": "c-welcome-post",
+    "author": "demonst 팀",
+    "avatar": "/demon-mascot.png",
+    "tag": "공지",
+    "title": "🎉 demonst에 오신 모든 인디 메이커 여러분을 환영합니다!",
+    "content": "안녕하세요! demonst는 직접 만든 사이드 프로젝트를 런칭하고 실사용자 피드백과 업보트를 받을 수 있는 열린 놀이터입니다.\n누구나 자유롭게 프로젝트를 등록하고 피드백을 주고받아보세요!",
+    "likes": 42,
+    "comments": 7,
+    "timeAgo": "방금 전"
+  },
+  {
+    "id": "c-tip-launch",
+    "author": "코지트 메이커",
+    "avatar": "https://cozit.kr/assets/app/cozit-icon-192-v2.png",
+    "tag": "질문",
+    "title": "첫 프로젝트 런칭할 때 가장 도움이 되었던 피드백은 무엇이었나요?",
+    "content": "처음 사이트를 오픈했을 때 UI 직관성과 로딩 속도에 대한 사용자 피드백이 가장 뼈가 되고 살이 되었던 것 같습니다. 다른 메이커분들의 경험도 궁금합니다!",
+    "likes": 18,
+    "comments": 5,
+    "timeAgo": "1시간 전"
+  }
+]
