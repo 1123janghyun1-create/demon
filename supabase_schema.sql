@@ -61,6 +61,58 @@ create table if not exists public.builders (
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- ========================================================
+-- Google OAuth 및 Supabase 회원가입 시 builders 테이블 자동 등록 트리거
+-- ========================================================
+create or replace function public.handle_new_auth_user()
+returns trigger as $$
+begin
+  insert into public.builders (id, name, email, avatar, role, bio, tags, updated_at)
+  values (
+    new.id::text,
+    coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', split_part(new.email, '@', 1), '인디 빌더'),
+    new.email,
+    coalesce(new.raw_user_meta_data->>'avatar_url', new.raw_user_meta_data->>'picture', '/demon-mascot.png'),
+    '인디 메이커',
+    'demonst 사이드 프로젝트 메이커입니다.',
+    array['개발자', 'SaaS', 'AI'],
+    now()
+  )
+  on conflict (id) do update
+  set
+    name = coalesce(excluded.name, public.builders.name),
+    avatar = coalesce(excluded.avatar, public.builders.avatar),
+    email = coalesce(excluded.email, public.builders.email),
+    updated_at = now();
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- 트리거 바인딩 (회원가입 또는 로그인 시 자동 실행)
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert or update on auth.users
+  for each row execute function public.handle_new_auth_user();
+
+-- 이미 가입된 기존 회원들을 public.builders로 즉시 일괄 동기화
+insert into public.builders (id, name, email, avatar, role, bio, tags, updated_at)
+select
+  id::text,
+  coalesce(raw_user_meta_data->>'full_name', raw_user_meta_data->>'name', split_part(email, '@', 1), '인디 빌더'),
+  email,
+  coalesce(raw_user_meta_data->>'avatar_url', raw_user_meta_data->>'picture', '/demon-mascot.png'),
+  '인디 메이커',
+  'demonst 사이드 프로젝트 메이커입니다.',
+  array['개발자', 'SaaS', 'AI'],
+  now()
+from auth.users
+on conflict (id) do update
+set
+  name = coalesce(excluded.name, public.builders.name),
+  avatar = coalesce(excluded.avatar, public.builders.avatar),
+  email = coalesce(excluded.email, public.builders.email),
+  updated_at = now();
+
 -- 4. community_posts 테이블 (커뮤니티 게시글)
 create table if not exists public.community_posts (
   id text primary key,
@@ -193,4 +245,42 @@ begin
   where id = product_id;
 end;
 $$ language plpgsql;
+
+-- ========================================================
+-- 실시간 변경사항 브로드캐스트 (Supabase Realtime 활성화)
+-- ========================================================
+do $$
+begin
+  if not exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    create publication supabase_realtime;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables 
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'builders'
+  ) then
+    alter publication supabase_realtime add table public.builders;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables 
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'products'
+  ) then
+    alter publication supabase_realtime add table public.products;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables 
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'feedbacks'
+  ) then
+    alter publication supabase_realtime add table public.feedbacks;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables 
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'community_posts'
+  ) then
+    alter publication supabase_realtime add table public.community_posts;
+  end if;
+end $$;
 

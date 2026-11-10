@@ -59,7 +59,7 @@ function parseTitleAndSubtitle(rawTitle: string): { title: string; subtitle: str
   return { title: cleaned, subtitle: '' };
 }
 
-function cleanTagline(subtitle: string, rawDesc: string, title: string): string {
+function cleanTagline(subtitle: string, rawDesc: string): string {
   if (subtitle && subtitle.length >= 4 && subtitle.length <= 60) {
     return decodeHtmlEntities(subtitle).trim();
   }
@@ -87,94 +87,97 @@ function cleanTagline(subtitle: string, rawDesc: string, title: string): string 
   return '';
 }
 
+function extractDynamicFeatures(title: string, rawDesc: string, category: string): string[] {
+  const candidates: string[] = [];
+  const navBlacklist = /^(로그인|회원가입|홈|메뉴|공지|푸터|이용약관|개인정보|문의하기|login|sign in|home|menu|footer|terms|privacy)$/i;
+
+  if (rawDesc) {
+    const parts = rawDesc
+      .split(/[,·\n\r•|/]+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length >= 4 && s.length <= 70 && !navBlacklist.test(s));
+    candidates.push(...parts);
+  }
+
+  const unique: string[] = [];
+  const seen = new Set<string>();
+  for (const c of candidates) {
+    const norm = c.toLowerCase().replace(/[^a-z0-9가-힣]/g, '');
+    if (norm.length >= 3 && !seen.has(norm)) {
+      seen.add(norm);
+      unique.push(c);
+      if (unique.length >= 6) break;
+    }
+  }
+
+  return unique;
+}
+
 function generateDetailedMarkdown(
   title: string,
   tagline: string,
   rawDesc: string,
-  category: string
+  category: string,
+  domain: string
 ): string {
+  const cleanTitle = title || domain;
   const cleanDesc = decodeHtmlEntities(rawDesc).trim();
   const cleanTaglineText = decodeHtmlEntities(tagline).trim();
+  const dynamicFeatures = extractDynamicFeatures(cleanTitle, cleanDesc, category);
 
   let md = '';
 
-  // 1. 서비스 개요
-  md += `### 💡 서비스 개요\n`;
+  md += `### 💡 서비스 핵심 개요\n`;
   if (cleanDesc) {
-    md += `**${title}**은(는) ${cleanDesc}\n\n`;
+    md += `**${cleanTitle}**은(는) ${cleanDesc}\n\n`;
   } else if (cleanTaglineText) {
-    md += `**${title}**은(는) "${cleanTaglineText}"를 모토로 혁신적인 가치를 제공하는 웹 서비스입니다.\n\n`;
+    md += `**${cleanTitle}**은(는) "${cleanTaglineText}"를 모토로 혁신적인 가치를 제공하는 독창적인 웹 프로덕트입니다.\n\n`;
   } else {
-    md += `**${title}**은(는) 사용자 중심의 인터페이스와 직관적인 경험을 제공하는 웹 애플리케이션입니다.\n\n`;
+    md += `**${cleanTitle}**은(는) ${domain} 도메인을 기반으로 사용자에게 직관적이고 실용적인 경험을 제공하는 웹 애플리케이션입니다.\n\n`;
   }
 
-  // 2. 주요 핵심 기능 및 특징
-  md += `### ✨ 주요 핵심 기능 및 특징\n`;
-  const featuresList: string[] = [];
-  const descLower = cleanDesc.toLowerCase();
+  md += `복잡한 절차와 정보 파편화를 줄이고 웹 브라우저에서 누구나 빠르고 쾌적하게 핵심 목적을 실현할 수 있도록 정밀하게 개발되었습니다.\n\n`;
 
-  if (descLower.includes('launch') || descLower.includes('meet') || descLower.includes('grow') || category === '커뮤니티 / 소셜') {
-    featuresList.push(`1. **프로젝트 간편 등록 & 쇼케이스**: 새로운 아이디어와 신규 서비스를 손쉽게 런칭하고 초기 인지도를 확보할 수 있습니다.`);
-    featuresList.push(`2. **초기 사용자 확보 & 실전 피드백**: 실제 타겟 유저와 테스터들의 생생한 리뷰를 통해 제품을 빠르게 검증하고 개선할 수 있습니다.`);
-    featuresList.push(`3. **동료 메이커 네트워킹 & 커뮤니티**: 함께 프로젝트를 빌딩하고 성장할 동료 창업가 및 개발자들과 교류할 수 있습니다.`);
-    featuresList.push(`4. **카테고리별 실시간 랭킹 & 탐색**: 최신 트렌드의 다양한 서비스들을 카테고리별로 둘러보고 새로운 영감을 얻을 수 있습니다.`);
-  } else if (category === 'AI' || descLower.includes('ai') || descLower.includes('gpt')) {
-    featuresList.push(`1. **AI 기반 지능형 자동화**: 복잡한 작업 흐름을 인공지능이 신속하게 분석하고 처리하여 작업 시간을 대폭 단축합니다.`);
-    featuresList.push(`2. **실시간 인터랙티브 경험**: 사용자의 입력과 요구사항에 즉각적으로 반응하여 최적화된 결과물을 도출합니다.`);
-    featuresList.push(`3. **스마트한 인사이트 도출**: 데이터와 컨텍스트를 종합적으로 이해하고 맞춤형 권장 사항을 제공합니다.`);
-    featuresList.push(`4. **높은 작업 생산성**: 반복적인 수작업을 자동화하여 핵심 가치 창출에 집중할 수 있도록 돕습니다.`);
-  } else if (category === '개발자 도구' || descLower.includes('developer') || descLower.includes('code')) {
-    featuresList.push(`1. **개발 생산성 가속화**: 개발자가 겪는 반복적인 설정과 빌드 번거로움을 덜어주고 개발 흐름을 최적화합니다.`);
-    featuresList.push(`2. **직관적인 UI 및 CLI 지원**: 군더더기 없는 인터페이스와 유연한 연동으로 개발 집중도를 높입니다.`);
-    featuresList.push(`3. **원활한 외부 생태계 통합**: 다양한 최신 라이브러리 및 배포 환경과의 호환성을 갖추고 있습니다.`);
-    featuresList.push(`4. **실시간 모니터링 & 디버깅**: 작업 상태와 에러를 한눈에 파악할 수 있는 직관적인 피드백을 제공합니다.`);
+  md += `### ✨ 사이트 분석 기반 주요 핵심 기능 & 시스템\n`;
+  if (dynamicFeatures.length > 0) {
+    dynamicFeatures.forEach((feat, idx) => {
+      let desc = '실시간 인터랙티브 데이터 처리와 최적화된 워크플로우를 통해 사용자가 원하는 핵심 가치를 지체 없이 실현합니다.';
+      if (/코인|선물|투자|차트|펀딩|거래소|셀퍼럴|페이백|크립토/i.test(feat + ' ' + cleanDesc)) {
+        desc = '실시간 시장 동향과 펀딩 비율 등 핵심 데이터를 면밀히 집계하여 최적의 의사결정과 혜택을 지원합니다.';
+      } else if (/ai|gpt|프롬프트|생성형|llm/i.test(feat + ' ' + cleanDesc)) {
+        desc = '인공지능 모델을 활용하여 번거로운 수작업 단계를 줄이고 고품질 결과물을 실시간으로 생성합니다.';
+      }
+      md += `${idx + 1}. **${feat}**: ${desc}\n`;
+    });
   } else {
-    featuresList.push(`1. **웹 기반 즉시 접근성**: 별도의 복잡한 설치 없이 브라우저에서 바로 사용할 수 있는 쾌적한 사용 환경을 제공합니다.`);
-    featuresList.push(`2. **직관적이고 모던한 UI/UX**: 처음 사용하는 유저도 매뉴얼 없이 손쉽게 기능을 파악하고 이용할 수 있도록 설계되었습니다.`);
-    featuresList.push(`3. **핵심 기능 집중 전달**: 사용자가 필요로 하는 본질적인 가치를 가장 빠르고 안정적인 속도로 전달합니다.`);
-    featuresList.push(`4. **멀티 디바이스 반응형 최적화**: 모바일, 태블릿, 데스크톱 등 다양한 해상도에서 깨짐 없는 완벽한 레이아웃을 보장합니다.`);
+    md += `1. **${cleanTitle} 핵심 인터페이스**: 직관적이고 모던한 UI를 통해 처음 방문한 사용자도 매뉴얼 없이 즉시 핵심 기능을 파악하고 이용할 수 있습니다.\n`;
+    md += `2. **실시간 데이터 동기화 & 고속 처리**: 최신 웹 기술을 적용하여 모든 인터랙션과 작업 상태가 실시간으로 부드럽게 갱신됩니다.\n`;
+    md += `3. **멀티 디바이스 반응형 최적화**: 모바일, 태블릿, 데스크톱 등 다양한 해상도에서 화면 깨짐 없는 완벽한 레이아웃을 보장합니다.\n`;
+  }
+  md += `\n`;
+
+  md += `### 🚀 실전 워크플로우 & 주요 활용 시나리오\n`;
+  md += `- **1단계: 진입 및 온보딩**: ${domain}에 접속하여 서비스가 제공하는 핵심 기능과 사용자 혜택을 한눈에 파악합니다.\n`;
+  md += `- **2단계: 작업 실행 및 탐색**: 직관적인 메뉴 구성을 따라 필요한 정보 조회 및 작업을 지체 없이 진행합니다.\n`;
+  md += `- **3단계: 피드백 및 확장**: 도출된 인사이트나 결과물을 동료들과 공유하고 지속적인 사용 루틴을 정착합니다.\n\n`;
+
+  md += `### 🎯 최적 타겟 고객군 & 추천 대상\n`;
+  if (/코인|선물|투자|crypto|trade/i.test(cleanDesc + ' ' + cleanTitle)) {
+    md += `- 실시간 시장 시황과 펀딩비, 매매일지를 편리하게 관리하고 싶은 가상자산/선물 트레이더\n`;
+    md += `- 거래소 수수료 부담을 낮추고 페이백 혜택을 확인하고자 하는 스마트한 투자자\n\n`;
+  } else if (/ai|gpt|프롬프트/i.test(cleanDesc + ' ' + cleanTitle)) {
+    md += `- 최신 AI 툴을 실무에 즉시 도입하여 작업 생산성을 극대화하고 싶은 메이커 및 얼리어답터\n`;
+    md += `- 복잡한 설정 없이도 뛰어난 AI 분석 결과를 간편하게 얻고자 하는 사용자\n\n`;
+  } else {
+    md += `- 군더더기 없는 심플한 웹 도구와 빠른 반응 속도를 선호하는 사용자\n`;
+    md += `- 일상이나 업무 프로세스를 한층 더 스마트하게 개선하고 싶은 생산성 지향 메이커\n\n`;
   }
 
-  md += featuresList.join('\n') + `\n\n`;
-
-  // 3. 주요 활용 시나리오
-  md += `### 🚀 주요 활용 시나리오\n`;
-  if (category === '커뮤니티 / 소셜') {
-    md += `- **신규 제품 런칭 시**: 서비스 소개 글과 스크린샷을 등록하여 첫 번째 얼리어답터 사용자들을 모집하고 초기 반응을 확인합니다.\n`;
-    md += `- **제품 개선 단계**: 실제 사용자들의 업보트와 피드백 댓글을 취합하여 기능 로드맵을 수립하고 서비스를 고도화합니다.\n`;
-    md += `- **트렌드 리서치**: 다른 인디 메이커들이 어떤 기술 스택과 비즈니스 모델로 제품을 만들고 있는지 벤치마킹합니다.\n\n`;
-  } else if (category === 'AI') {
-    md += `- **업무 자동화**: 일상적인 문서 작성이나 아이디어 구상 단계에서 AI의 도움을 받아 초기 초안을 빠르게 작성합니다.\n`;
-    md += `- **아이디어 브레인스토밍**: 새로운 프로젝트 기획 시 다각도의 관점과 솔루션을 실시간으로 탐색합니다.\n\n`;
-  } else {
-    md += `- **일상 및 업무 생산성 향상**: 불필요한 단계를 줄이고 효율적인 작업 루틴을 구축합니다.\n`;
-    md += `- **실시간 협업 및 공유**: 링크 하나로 작업 내용을 동료나 팀원들과 손쉽게 공유하고 피드백을 나눕니다.\n\n`;
-  }
-
-  // 4. 타겟 사용자 및 가치 제안
-  md += `### 🎯 타겟 사용자 및 추천 대상\n`;
-  if (category === 'AI') {
-    md += `- 최신 생성형 AI 기술을 활용해 업무 및 창작 생산성을 비약적으로 높이고 싶은 메이커\n`;
-    md += `- 복잡한 프롬프트 엔지니어링 없이 직관적으로 스마트한 AI 결과를 얻고자 하는 사용자\n`;
-    md += `- 새로운 AI 툴을 빠르게 도입하고 실무에 적용해보는 테크 얼리어답터\n\n`;
-  } else if (category === '커뮤니티 / 소셜') {
-    md += `- 사이드 프로젝트나 신규 서비스를 출시하고 초기 유저 피드백이 절실한 인디 개발자\n`;
-    md += `- 함께 프로젝트를 빌딩할 팀원이나 동료 메이커를 찾고 있는 창업가 및 디자이너\n`;
-    md += `- 세상에 막 나온 흥미진진한 신작 서비스들을 가장 먼저 써보고 피드백을 나누는 얼리어답터\n\n`;
-  } else if (category === '개발자 도구') {
-    md += `- 코딩 및 배포 프로세스를 더 스마트하고 빠르게 개선하고 싶은 프론트/백엔드 엔지니어\n`;
-    md += `- 효율적인 개발 환경 구축과 도구 최적화에 관심이 많은 1인 개발자 및 스타트업 팀\n\n`;
-  } else {
-    md += `- 직관적이고 실용적인 웹 서비스를 통해 일상이나 업무의 효율을 높이고 싶은 사용자\n`;
-    md += `- 군더더기 없는 심플한 도구와 편리한 사용성을 선호하는 사용자\n\n`;
-  }
-
-  // 5. 테스터 피드백 요청 포인트
-  md += `### 🔍 테스터를 위한 피드백 요청 포인트\n`;
-  md += `- **온보딩 및 직관성**: 랜딩 페이지 접속 시 서비스의 핵심 가치와 사용 방법이 명확하게 이해되는지\n`;
-  md += `- **UI/UX 편의성**: PC 웹 브라우저 및 모바일 화면에서의 버튼 클릭 반응성, 폰트 가독성, 레이아웃의 완성도\n`;
-  md += `- **기능 안정성 & 성능**: 페이지 로딩 속도나 인터랙션 동작 시 버그 또는 어색한 동작이 없는지\n`;
-  md += `- **기능 개선 제안**: 실제 사용 시 불편했던 점이나 향후 추가되었으면 하는 기능에 대한 솔직한 의견`;
+  md += `### 🔍 테스터를 위한 집중 피드백 요청 포인트\n`;
+  md += `- **[첫인상 및 직관성]**: 랜딩 페이지 진입 시 서비스의 핵심 가치와 사용 방법이 명확하게 이해되는지\n`;
+  md += `- **[UI/UX 사용 편의성]**: 모바일 및 데스크톱 환경에서의 버튼 반응성, 폰트 가독성, 메뉴 탐색의 쾌적함\n`;
+  md += `- **[기능 완성도 및 안정성]**: 실제 조작 과정에서 버그나 로딩 지연 현상이 발생하지 않는지\n`;
+  md += `- **[개선 아이디어]**: 실사용자 관점에서 추가되었으면 하는 기능이나 개선 제안`;
 
   return md.trim();
 }
@@ -202,7 +205,7 @@ function inferCategoryStrict(text: string): string {
   if (/saas|생산성|업무|협업|프로젝트|notion|slack|crm|task|productivity/.test(t)) {
     return '생산성';
   }
-  if (/pay|crypto|stock|coin|money|주식|코인|가계부|금융|투자|결제/.test(t)) {
+  if (/pay|crypto|stock|coin|money|주식|코인|선물|투자|가계부|금융|셀퍼럴|페이백/.test(t)) {
     return '금융 / 핀테크';
   }
   if (/game|play|게임|퀴즈|엔터|music|음악|웹툰/.test(t)) {
@@ -214,10 +217,7 @@ function inferCategoryStrict(text: string): string {
   if (/health|fit|diet|건강|운동|식단|습관|루틴|lifestyle/.test(t)) {
     return '라이프스타일 / 건강';
   }
-  if (/tool|utility|계산기|변환|확장|converter/.test(t)) {
-    return '유틸리티 / 도구';
-  }
-  return '';
+  return '생산성';
 }
 
 export async function fetchWebsiteMetadata(targetUrl: string): Promise<ExtractedMetadata> {
@@ -226,7 +226,7 @@ export async function fetchWebsiteMetadata(targetUrl: string): Promise<Extracted
     cleanUrl = 'https://' + cleanUrl;
   }
 
-  // 1. First attempt: call our /api/crawl scraper (Serverless function / Vite middleware)
+  // 1. Primary: Serverless crawler endpoint (Vite dev middleware & Vercel API)
   try {
     const res = await fetch(`/api/crawl?url=${encodeURIComponent(cleanUrl)}`);
     if (res.ok) {
@@ -248,18 +248,18 @@ export async function fetchWebsiteMetadata(targetUrl: string): Promise<Extracted
             threads: data.socialLinks?.threads || '',
             youtube: data.socialLinks?.youtube || '',
           },
-          additionalLinks: Array.isArray(data.additionalLinks) ? data.additionalLinks : [],
+          additionalLinks: data.additionalLinks || [],
           category: data.category || '',
-          tags: Array.isArray(data.tags) ? data.tags.map((t: string) => decodeHtmlEntities(t)) : [],
-          instructions: data.description || '',
+          tags: Array.isArray(data.tags) ? data.tags : [],
+          instructions: data.instructions || data.description || '',
         };
       }
     }
   } catch (err) {
-    console.warn('api/crawl failed or offline, using fallback:', err);
+    console.warn('Backend crawler fetch failed, activating enhanced client scraper:', err);
   }
 
-  // 2. Client-side fallback via Microlink + Real Screenshots
+  // 2. Client-side fallback using thum.io high-res screenshot
   let domain = '';
   try {
     domain = new URL(cleanUrl).hostname.replace(/^www\./, '');
@@ -267,78 +267,59 @@ export async function fetchWebsiteMetadata(targetUrl: string): Promise<Extracted
     domain = cleanUrl.replace(/^https?:\/\//, '').split('/')[0];
   }
 
-  const desktopScreenshot = `https://s0.wp.com/mshots/v1/${encodeURIComponent(cleanUrl)}?w=1280&h=800`;
-  const mobileScreenshot = `https://s0.wp.com/mshots/v1/${encodeURIComponent(cleanUrl)}?w=480&h=854`;
+  const desktopScreenshot = `https://image.thum.io/get/width/1280/crop/800/noanimate/${cleanUrl}`;
+  const mobileScreenshot = `https://image.thum.io/get/width/480/crop/854/noanimate/${cleanUrl}`;
 
-  const result: ExtractedMetadata = {
+  // Try Microlink metadata
+  try {
+    const mRes = await fetch(`https://api.microlink.io?url=${encodeURIComponent(cleanUrl)}`);
+    if (mRes.ok) {
+      const mJson = await mRes.json();
+      const mData = mJson?.data;
+      if (mData) {
+        const { title: pTitle, subtitle: pSub } = parseTitleAndSubtitle(mData.title || '');
+        const finalTitle = pTitle || mData.publisher || domain;
+        const finalTagline = cleanTagline(pSub, mData.description || '');
+        const cat = inferCategoryStrict(`${cleanUrl} ${finalTitle} ${mData.description || ''}`);
+        const desc = generateDetailedMarkdown(finalTitle, finalTagline, mData.description || '', cat, domain);
+
+        const gallery = [desktopScreenshot, mobileScreenshot];
+        if (mData.image?.url && !mData.image.url.includes('favicon')) {
+          gallery.unshift(mData.image.url);
+        }
+
+        return {
+          title: finalTitle,
+          tagline: finalTagline,
+          description: desc,
+          logoUrl: mData.logo?.url || `https://www.google.com/s2/favicons?domain=${domain}&sz=256`,
+          screenshotUrl: desktopScreenshot,
+          gallery: gallery.slice(0, 5),
+          demoVideo: '',
+          socialLinks: { twitter: '', github: '', linkedin: '', instagram: '', threads: '', youtube: '' },
+          additionalLinks: [],
+          category: cat,
+          tags: [cat, '인디메이커', 'SaaS'],
+          instructions: desc,
+        };
+      }
+    }
+  } catch {}
+
+  // Basic fallback
+  const basicDesc = generateDetailedMarkdown(domain, '', '', '생산성', domain);
+  return {
     title: domain,
     tagline: '',
-    description: '',
+    description: basicDesc,
     logoUrl: `https://www.google.com/s2/favicons?domain=${domain}&sz=256`,
     screenshotUrl: desktopScreenshot,
     gallery: [desktopScreenshot, mobileScreenshot],
     demoVideo: '',
-    socialLinks: {
-      twitter: '',
-      github: '',
-      linkedin: '',
-      instagram: '',
-      threads: '',
-      youtube: '',
-    },
+    socialLinks: { twitter: '', github: '', linkedin: '', instagram: '', threads: '', youtube: '' },
     additionalLinks: [],
-    category: '',
-    tags: ['웹서비스'],
-    instructions: '',
+    category: '생산성',
+    tags: ['생산성', '웹서비스'],
+    instructions: basicDesc,
   };
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6500);
-
-    const res = await fetch(
-      `https://api.microlink.io?url=${encodeURIComponent(cleanUrl)}&screenshot=true&meta=true`,
-      { signal: controller.signal }
-    );
-    clearTimeout(timeoutId);
-
-    if (res.ok) {
-      const json = await res.json();
-      if (json.status === 'success' && json.data) {
-        const d = json.data;
-
-        const { title: parsedTitle, subtitle: parsedSubtitle } = parseTitleAndSubtitle(d.title || '');
-        if (parsedTitle) result.title = parsedTitle;
-
-        const rawDesc = decodeHtmlEntities(d.description || '');
-        result.tagline = cleanTagline(parsedSubtitle, rawDesc, result.title);
-
-        if (d.logo && d.logo.url) {
-          result.logoUrl = resolveUrl(d.logo.url, cleanUrl);
-        } else if (d.icon && d.icon.url) {
-          result.logoUrl = resolveUrl(d.icon.url, cleanUrl);
-        }
-
-        if (d.image && d.image.url && !d.image.url.includes('favicon')) {
-          const ogImg = resolveUrl(d.image.url, cleanUrl);
-          if (!result.gallery.includes(ogImg)) {
-            result.gallery.push(ogImg);
-          }
-        }
-
-        result.category = inferCategoryStrict(`${cleanUrl} ${result.title} ${rawDesc}`);
-
-        result.description = generateDetailedMarkdown(result.title, result.tagline, rawDesc, result.category);
-        result.instructions = result.description;
-
-        if (d.video && d.video.url) {
-          result.demoVideo = d.video.url;
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('Microlink fallback error:', err);
-  }
-
-  return result;
 }

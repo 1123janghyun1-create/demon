@@ -1028,12 +1028,12 @@ export const SubmitApp: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <label className="text-xs font-bold text-fg">제품 상세 설명</label>
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20">
-                    마크다운 지원 · 최대 3,000자
+                    마크다운 지원 · 최대 10,000자
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`text-[11px] font-mono ${description.length > 2800 ? 'text-amber-500 font-bold' : 'text-fg-muted'}`}>
-                    {description.length}/3,000자
+                  <span className={`text-[11px] font-mono ${description.length > 9500 ? 'text-amber-500 font-bold' : 'text-fg-muted'}`}>
+                    {description.length}/10,000자
                   </span>
                   {/* Edit / Preview Tab Switcher */}
                   <div className="flex items-center rounded-btn bg-surface-2 p-0.5 border border-border">
@@ -1127,8 +1127,8 @@ export const SubmitApp: React.FC = () => {
                   {/* Textarea */}
                   <textarea
                     ref={descTextareaRef}
-                    rows={12}
-                    maxLength={3000}
+                    rows={14}
+                    maxLength={10000}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="제품을 소개하는 마크다운 텍스트를 작성하거나 AI가 분석한 내용을 편집하세요."

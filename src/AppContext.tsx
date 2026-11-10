@@ -57,6 +57,8 @@ interface AppContextType {
   addProduct: (newApp: Omit<Product, 'id' | 'slug' | 'feedbackCount' | 'createdAt'>) => Product;
   leaderboard: LeaderboardUser[];
   builders: Builder[];
+  refreshBuilders: () => Promise<void>;
+  isRefreshingBuilders: boolean;
   toggleFollowBuilder: (builderId: string) => void;
   activeDmBuilder: Builder | null;
   setActiveDmBuilder: (b: Builder | null) => void;
@@ -92,23 +94,6 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Hard reset migration check: completely resets stale local data when platform is cleared
-  const DEMON_STORAGE_VERSION = 'v5_hard_reset_all_20261108';
-  try {
-    const curVer = localStorage.getItem('demon_storage_version');
-    if (curVer !== DEMON_STORAGE_VERSION) {
-      localStorage.removeItem('demon_products');
-      localStorage.removeItem('demon_feedbacks');
-      localStorage.removeItem('demon_builders');
-      localStorage.removeItem('demon_community');
-      localStorage.removeItem('demon_leaderboard');
-      localStorage.removeItem('demon_dm_messages');
-      localStorage.removeItem('demon_notifications');
-      localStorage.removeItem('demon_upvoted_products');
-      localStorage.setItem('demon_storage_version', DEMON_STORAGE_VERSION);
-    }
-  } catch {}
-
   // User profile state
   const [user, setUser] = useState<UserProfile>(() => {
     try {
@@ -198,6 +183,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch {}
     return (initialBuilders as Builder[]) || [];
   });
+  const [isRefreshingBuilders, setIsRefreshingBuilders] = useState(false);
+
+  const refreshBuilders = useCallback(async () => {
+    setIsRefreshingBuilders(true);
+    try {
+      const dbBuilders = await fetchBuildersFromDB();
+      if (dbBuilders && Array.isArray(dbBuilders)) {
+        setBuilders((prevLocal) => {
+          if (dbBuilders.length === 0) return prevLocal;
+          const localFollowMap = new Map(prevLocal.map((b) => [b.id, b.isFollowing]));
+          const remoteIds = new Set(dbBuilders.map((b) => b.id));
+          const merged = dbBuilders.map((b) => ({
+            ...b,
+            isFollowing: localFollowMap.get(b.id) ?? false,
+          }));
+          const localOnly = prevLocal.filter((b) => !remoteIds.has(b.id));
+          const fullList = [...merged, ...localOnly];
+          try {
+            localStorage.setItem('demon_builders', JSON.stringify(fullList));
+          } catch {}
+          return fullList;
+        });
+      }
+    } catch (e) {
+      console.warn('refreshBuilders error:', e);
+    } finally {
+      setIsRefreshingBuilders(false);
+    }
+  }, []);
 
   // Active DM Chat Modal
   const [activeDmBuilder, setActiveDmBuilder] = useState<Builder | null>(null);
@@ -365,36 +379,116 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch {}
   }, [selectedProduct]);
 
-  // Sync Supabase Database / Server API to Local State on App Startup
+  // Sync Supabase Database / Server API to Local State on App Startup (with Smart Merge & Fallback)
   useEffect(() => {
     // 1. Fetch products from DB / API
     fetchProductsFromDB().then((dbProducts) => {
-      if (dbProducts !== null) {
-        setProducts(dbProducts);
-      }
+      if (!dbProducts) return; // Remote DB unavailable or errored -> preserve local products!
+
+      setProducts((prevLocal) => {
+        if (dbProducts.length === 0) {
+          // If remote DB is empty but we have local products, preserve them and background-sync to DB!
+          if (prevLocal && prevLocal.length > 0) {
+            prevLocal.forEach((p) => insertProductToDB(p).catch(() => {}));
+          }
+          return prevLocal;
+        }
+
+        // Merge: keep all remote products, plus any local products not yet present in remote
+        const remoteIds = new Set(dbProducts.map((p) => p.id));
+        const localOnly = prevLocal.filter((p) => !remoteIds.has(p.id));
+
+        // Sync local-only products to DB in background so other devices see them
+        localOnly.forEach((p) => insertProductToDB(p).catch(() => {}));
+
+        const merged = [...dbProducts, ...localOnly];
+        try {
+          localStorage.setItem('demon_products', JSON.stringify(merged));
+        } catch {}
+        return merged;
+      });
     });
 
     // 2. Fetch feedbacks from DB / API
     fetchFeedbacksFromDB().then((dbFeedbacks) => {
-      if (dbFeedbacks !== null) {
-        setFeedbacks(dbFeedbacks);
-      }
+      if (!dbFeedbacks) return;
+
+      setFeedbacks((prevLocal) => {
+        if (Object.keys(dbFeedbacks).length === 0) {
+          return prevLocal;
+        }
+
+        const merged: Record<string, Feedback[]> = { ...prevLocal };
+        Object.entries(dbFeedbacks).forEach(([prodId, remoteList]) => {
+          const localList = merged[prodId] || [];
+          const remoteIds = new Set(remoteList.map((f) => f.id));
+          const localOnly = localList.filter((f) => !remoteIds.has(f.id));
+          merged[prodId] = [...remoteList, ...localOnly];
+        });
+
+        try {
+          localStorage.setItem('demon_feedbacks', JSON.stringify(merged));
+        } catch {}
+        return merged;
+      });
     });
 
     // 3. Fetch builders from DB / API
-    fetchBuildersFromDB().then((dbBuilders) => {
-      if (dbBuilders !== null) {
-        setBuilders(dbBuilders);
-      }
-    });
+    refreshBuilders();
 
     // 4. Fetch community posts from DB / API
     fetchCommunityPostsFromDB().then((dbPosts) => {
-      if (dbPosts !== null) {
-        setCommunityPosts(dbPosts);
-      }
+      if (!dbPosts) return;
+
+      setCommunityPosts((prevLocal) => {
+        if (dbPosts.length === 0) {
+          return prevLocal;
+        }
+
+        const remoteIds = new Set(dbPosts.map((p) => p.id));
+        const localOnly = prevLocal.filter((p) => !remoteIds.has(p.id));
+        const merged = [...dbPosts, ...localOnly];
+
+        try {
+          localStorage.setItem('demon_community', JSON.stringify(merged));
+        } catch {}
+        return merged;
+      });
     });
-  }, []);
+  }, [refreshBuilders]);
+
+  // Automatically refresh builders whenever switching to the Builders tab
+  useEffect(() => {
+    if (currentTab === 'builders') {
+      refreshBuilders();
+    }
+  }, [currentTab, refreshBuilders]);
+
+  // Supabase Real-time Listener for Builders table
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+    const client = supabase;
+
+    try {
+      const channel = client
+        .channel('realtime:builders')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'builders' },
+          (payload) => {
+            console.log('[Supabase Realtime Builders Event]:', payload);
+            refreshBuilders();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        client.removeChannel(channel);
+      };
+    } catch (e) {
+      console.warn('Supabase realtime listener setup error:', e);
+    }
+  }, [refreshBuilders]);
 
   // Sync Logged-in User into Builders list
   const syncUserToBuilders = useCallback((currentUser: UserProfile) => {
@@ -577,19 +671,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           cleanAuthUrl();
           applySupabaseSession(session);
         } else if (event === 'SIGNED_OUT') {
-          const guestUser: UserProfile = {
-            id: '',
-            email: '',
-            name: '게스트',
-            avatar: '/demon-mascot.png',
-            role: '인디 메이커',
-            bio: '새로운 사이드 프로젝트를 코딩하는 메이커입니다.',
-            buildingApp: '',
-            tags: ['개발자', 'SaaS', 'AI'],
-            isLoggedIn: false,
-          };
-          setUser(guestUser);
-          localStorage.setItem('demon_user', JSON.stringify(guestUser));
+          // Only clear session if the active user was signed in via Supabase OAuth
+          const savedUserRaw = localStorage.getItem('demon_user');
+          let isLocalOrDemoSession = false;
+          try {
+            if (savedUserRaw) {
+              const u = JSON.parse(savedUserRaw);
+              if (u && u.isLoggedIn && (u.id === 'demo-google-user' || u.isDemoUser)) {
+                isLocalOrDemoSession = true;
+              }
+            }
+          } catch {}
+
+          if (!isLocalOrDemoSession) {
+            const guestUser: UserProfile = {
+              id: '',
+              email: '',
+              name: '게스트',
+              avatar: '/demon-mascot.png',
+              role: '인디 메이커',
+              bio: '새로운 사이드 프로젝트를 코딩하는 메이커입니다.',
+              buildingApp: '',
+              tags: ['개발자', 'SaaS', 'AI'],
+              isLoggedIn: false,
+            };
+            setUser(guestUser);
+            localStorage.setItem('demon_user', JSON.stringify(guestUser));
+          }
         }
       });
 
@@ -1162,6 +1270,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addProduct,
         leaderboard,
         builders,
+        refreshBuilders,
+        isRefreshingBuilders,
         toggleFollowBuilder,
         activeDmBuilder,
         setActiveDmBuilder,

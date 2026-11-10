@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { Users, UserPlus, UserCheck, MessageSquare, Search, Hammer, Edit3, LogIn, Sparkles, ExternalLink, Globe } from 'lucide-react';
+import { Users, UserPlus, UserCheck, MessageSquare, Search, Hammer, Edit3, LogIn, Sparkles, ExternalLink, Globe, RefreshCw, Database } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { Builder } from '../types';
 
 export const Builders: React.FC = () => {
   const {
     builders,
+    refreshBuilders,
+    isRefreshingBuilders,
     toggleFollowBuilder,
     setActiveDmBuilder,
     openDmWithBuilder,
@@ -13,6 +15,7 @@ export const Builders: React.FC = () => {
     user,
     setIsProfileEditOpen,
     setIsLoginModalOpen,
+    showToast,
   } = useApp();
   const [filterRole, setFilterRole] = useState<string>('all');
   const [search, setSearch] = useState('');
@@ -49,14 +52,33 @@ export const Builders: React.FC = () => {
       {/* Title */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-fg flex items-center gap-2">
-            <span>빌더 (Builders)</span>
-            <span className="text-xs px-2 py-0.5 rounded-pill bg-rose-500/10 text-rose-600 dark:text-rose-400 font-semibold">
-              {builders.length}명
-            </span>
-          </h1>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-2xl font-bold tracking-tight text-fg flex items-center gap-2">
+              <span>빌더 (Builders)</span>
+              <span className="text-xs px-2 py-0.5 rounded-pill bg-rose-500/10 text-rose-600 dark:text-rose-400 font-semibold">
+                {builders.length}명
+              </span>
+            </h1>
+
+            {/* Supabase Realtime Sync Button */}
+            <button
+              type="button"
+              onClick={async () => {
+                await refreshBuilders();
+                showToast(`⚡ Supabase 최신 빌더 목록을 불러왔습니다! (${builders.length}명)`);
+              }}
+              disabled={isRefreshingBuilders}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-pill border border-border bg-surface-2 text-xs font-semibold text-fg-secondary hover:text-fg hover:border-accent transition-all cursor-pointer shadow-2xs"
+              title="Supabase 실시간 빌더 목록 동기화"
+            >
+              <RefreshCw className={`w-3 h-3 ${isRefreshingBuilders ? 'animate-spin text-accent' : 'text-accent'}`} />
+              <span className="text-[11px] font-medium">
+                {isRefreshingBuilders ? '동기화 중...' : 'Supabase 실시간 동기화'}
+              </span>
+            </button>
+          </div>
           <p className="mt-1 text-sm text-fg-muted leading-relaxed">
-            demonst에 로그인한 인디 메이커와 개발자들을 만나고 서로 팔로우 및 1:1 대화를 나눠보세요.
+            demonst와 Supabase에 등록된 실제 인디 메이커와 개발자들을 만나고 서로 팔로우 및 1:1 대화를 나눠보세요.
           </p>
         </div>
 
@@ -119,17 +141,31 @@ export const Builders: React.FC = () => {
           </div>
           <h2 className="text-base font-bold text-fg">아직 등록된 빌더가 없습니다.</h2>
           <p className="mt-1 text-xs text-fg-muted max-w-[360px] leading-relaxed">
-            Google로 로그인하시면 자동으로 빌더 목록에 등재되어 다른 메이커들과 팔로우하고 1:1 대화를 나눌 수 있습니다!
+            Google 계정으로 로그인하시면 Supabase에 자동으로 빌더 프로필이 생성되어 목록에 실시간 표시됩니다!
           </p>
-          {!user.isLoggedIn && (
+          <div className="mt-5 flex items-center gap-3 flex-wrap justify-center">
             <button
-              onClick={() => setIsLoginModalOpen(true)}
-              className="mt-5 inline-flex items-center gap-2 rounded-btn bg-accent px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-accent-hover transition-colors"
+              type="button"
+              onClick={async () => {
+                await refreshBuilders();
+                showToast(`⚡ Supabase 최신 빌더 목록을 불러왔습니다! (${builders.length}명)`);
+              }}
+              disabled={isRefreshingBuilders}
+              className="inline-flex items-center gap-1.5 rounded-btn border border-border bg-surface-2 px-4 py-2 text-xs font-bold text-fg hover:border-accent transition-colors"
             >
-              <LogIn className="w-4 h-4" />
-              <span>Google 로그인하고 첫 번째 빌더 되기</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingBuilders ? 'animate-spin text-accent' : 'text-accent'}`} />
+              <span>{isRefreshingBuilders ? '불러오는 중...' : 'Supabase 빌더 새로고침'}</span>
             </button>
-          )}
+            {!user.isLoggedIn && (
+              <button
+                onClick={() => setIsLoginModalOpen(true)}
+                className="inline-flex items-center gap-2 rounded-btn bg-accent px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-accent-hover transition-colors"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Google 로그인하고 빌더 등록</span>
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

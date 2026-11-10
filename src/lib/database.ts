@@ -35,6 +35,7 @@ async function syncApiPost(table: string, action: string, data: any): Promise<bo
 // ==========================================
 export async function fetchProductsFromDB(): Promise<Product[] | null> {
   let supaProducts: Product[] | null = null;
+  let supaQuerySucceeded = false;
 
   if (supabase) {
     try {
@@ -43,7 +44,8 @@ export async function fetchProductsFromDB(): Promise<Product[] | null> {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && Array.isArray(data) && data.length > 0) {
+      if (!error && Array.isArray(data)) {
+        supaQuerySucceeded = true;
         supaProducts = data.map((row: any) => {
           let createdDate = '방금 전';
           if (row.created_at) {
@@ -83,18 +85,24 @@ export async function fetchProductsFromDB(): Promise<Product[] | null> {
     }
   }
 
-  // If Supabase has data, return it
+  // 1. If Supabase returned products, return them
   if (supaProducts && supaProducts.length > 0) {
     return supaProducts;
   }
 
-  // Multi-account / Multi-browser fallback via /api/sync
+  // 2. Multi-account / Multi-browser fallback via /api/sync
   const apiProducts = await syncApiGet('products');
-  if (Array.isArray(apiProducts)) {
+  if (Array.isArray(apiProducts) && apiProducts.length > 0) {
     return apiProducts;
   }
 
-  return supaProducts || [];
+  // 3. If Supabase query succeeded and genuinely returned 0 rows:
+  if (supaQuerySucceeded && supaProducts) {
+    return supaProducts;
+  }
+
+  // 4. Remote DB was unavailable or errored: return null so local state is NEVER wiped!
+  return null;
 }
 
 export async function insertProductToDB(product: Product): Promise<boolean> {
@@ -104,7 +112,7 @@ export async function insertProductToDB(product: Product): Promise<boolean> {
   if (!supabase) return true;
 
   try {
-    const { error } = await supabase.from('products').insert([
+    const { error } = await supabase.from('products').upsert([
       {
         id: product.id,
         slug: product.slug,
@@ -129,12 +137,12 @@ export async function insertProductToDB(product: Product): Promise<boolean> {
 
     if (error) {
       console.warn('Supabase insertProduct warning:', error.message);
-      return true; // Still true because server sync API already stored it
+      return false;
     }
     return true;
   } catch (err) {
     console.warn('insertProductToDB error:', err);
-    return true;
+    return false;
   }
 }
 
@@ -251,6 +259,7 @@ export async function deleteProductFromDB(productId: string): Promise<boolean> {
 // ==========================================
 export async function fetchFeedbacksFromDB(): Promise<Record<string, Feedback[]> | null> {
   let supaMap: Record<string, Feedback[]> | null = null;
+  let supaQuerySucceeded = false;
 
   if (supabase) {
     try {
@@ -259,7 +268,8 @@ export async function fetchFeedbacksFromDB(): Promise<Record<string, Feedback[]>
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && Array.isArray(data) && data.length > 0) {
+      if (!error && Array.isArray(data)) {
+        supaQuerySucceeded = true;
         supaMap = {};
         data.forEach((row: any) => {
           let createdDate = '방금 전';
@@ -293,11 +303,15 @@ export async function fetchFeedbacksFromDB(): Promise<Record<string, Feedback[]>
   }
 
   const apiFeedbacks = await syncApiGet('feedbacks');
-  if (apiFeedbacks && typeof apiFeedbacks === 'object') {
+  if (apiFeedbacks && typeof apiFeedbacks === 'object' && Object.keys(apiFeedbacks).length > 0) {
     return apiFeedbacks;
   }
 
-  return supaMap || {};
+  if (supaQuerySucceeded && supaMap) {
+    return supaMap;
+  }
+
+  return null;
 }
 
 export async function insertFeedbackToDB(feedback: Feedback): Promise<boolean> {
@@ -305,7 +319,7 @@ export async function insertFeedbackToDB(feedback: Feedback): Promise<boolean> {
 
   if (!supabase) return true;
   try {
-    const { error } = await supabase.from('feedbacks').insert([
+    const { error } = await supabase.from('feedbacks').upsert([
       {
         id: feedback.id,
         product_id: feedback.productId,
@@ -347,6 +361,7 @@ export async function deleteFeedbackFromDB(feedbackId: string, productId?: strin
 // ==========================================
 export async function fetchBuildersFromDB(): Promise<Builder[] | null> {
   let supaBuilders: Builder[] | null = null;
+  let supaQuerySucceeded = false;
 
   if (supabase) {
     try {
@@ -355,7 +370,8 @@ export async function fetchBuildersFromDB(): Promise<Builder[] | null> {
         .select('*')
         .order('updated_at', { ascending: false });
 
-      if (!error && Array.isArray(data) && data.length > 0) {
+      if (!error && Array.isArray(data)) {
+        supaQuerySucceeded = true;
         supaBuilders = data.map((row: any) => ({
           id: row.id,
           name: row.name,
@@ -381,11 +397,15 @@ export async function fetchBuildersFromDB(): Promise<Builder[] | null> {
   }
 
   const apiBuilders = await syncApiGet('builders');
-  if (Array.isArray(apiBuilders)) {
+  if (Array.isArray(apiBuilders) && apiBuilders.length > 0) {
     return apiBuilders;
   }
 
-  return supaBuilders || [];
+  if (supaQuerySucceeded && supaBuilders) {
+    return supaBuilders;
+  }
+
+  return null;
 }
 
 export async function upsertBuilderToDB(builder: Builder): Promise<boolean> {
@@ -422,6 +442,7 @@ export async function upsertBuilderToDB(builder: Builder): Promise<boolean> {
 // ==========================================
 export async function fetchCommunityPostsFromDB(): Promise<CommunityPost[] | null> {
   let supaPosts: CommunityPost[] | null = null;
+  let supaQuerySucceeded = false;
 
   if (supabase) {
     try {
@@ -430,7 +451,8 @@ export async function fetchCommunityPostsFromDB(): Promise<CommunityPost[] | nul
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && Array.isArray(data) && data.length > 0) {
+      if (!error && Array.isArray(data)) {
+        supaQuerySucceeded = true;
         supaPosts = data.map((row: any) => {
           let createdDate = '방금 전';
           if (row.created_at) {
@@ -461,11 +483,15 @@ export async function fetchCommunityPostsFromDB(): Promise<CommunityPost[] | nul
   }
 
   const apiPosts = await syncApiGet('community');
-  if (Array.isArray(apiPosts)) {
+  if (Array.isArray(apiPosts) && apiPosts.length > 0) {
     return apiPosts;
   }
 
-  return supaPosts || [];
+  if (supaQuerySucceeded && supaPosts) {
+    return supaPosts;
+  }
+
+  return null;
 }
 
 export async function insertCommunityPostToDB(post: CommunityPost): Promise<boolean> {
@@ -473,7 +499,7 @@ export async function insertCommunityPostToDB(post: CommunityPost): Promise<bool
 
   if (!supabase) return true;
   try {
-    const { error } = await supabase.from('community_posts').insert([
+    const { error } = await supabase.from('community_posts').upsert([
       {
         id: post.id,
         author: post.author,
