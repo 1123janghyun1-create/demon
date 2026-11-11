@@ -4,7 +4,7 @@
   <!-- 1. demonst 메인 홈 -->
   <url>
     <loc>https://demonst.vercel.app/</loc>
-    <lastmod>2026-11-09</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>always</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -17,37 +17,37 @@
   <!-- 2. 주요 탭 페이지 (Google Search Console 표준: '#' 대신 '?tab=' 쿼리 사용) -->
   <url>
     <loc>https://demonst.vercel.app/?tab=test</loc>
-    <lastmod>2026-11-09</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://demonst.vercel.app/?tab=builders</loc>
-    <lastmod>2026-11-09</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://demonst.vercel.app/?tab=leaderboard</loc>
-    <lastmod>2026-11-09</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://demonst.vercel.app/?tab=community</loc>
-    <lastmod>2026-11-09</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://demonst.vercel.app/?tab=submit</loc>
-    <lastmod>2026-11-09</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://demonst.vercel.app/?tab=about</loc>
-    <lastmod>2026-11-09</lastmod>
+    <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
