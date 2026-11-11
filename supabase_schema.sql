@@ -154,6 +154,14 @@ create table if not exists public.notifications (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- 7. product_upvotes 테이블 (중복 업보트 원천 차단: 유저당 프로젝트 1회 한정)
+create table if not exists public.product_upvotes (
+  user_id text not null,
+  product_id text not null references public.products(id) on delete cascade,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  primary key (user_id, product_id)
+);
+
 -- ========================================================
 -- RLS (Row Level Security) 설정: 모든 사용자가 조회 및 쓰기 가능하도록 개방
 -- ========================================================
@@ -163,6 +171,15 @@ alter table public.builders enable row level security;
 alter table public.community_posts enable row level security;
 alter table public.direct_messages enable row level security;
 alter table public.notifications enable row level security;
+alter table public.product_upvotes enable row level security;
+
+-- Product Upvotes RLS Policy
+drop policy if exists "Allow public read product_upvotes" on public.product_upvotes;
+create policy "Allow public read product_upvotes" on public.product_upvotes for select using (true);
+drop policy if exists "Allow insert product_upvotes" on public.product_upvotes;
+create policy "Allow insert product_upvotes" on public.product_upvotes for insert with check (true);
+drop policy if exists "Allow delete product_upvotes" on public.product_upvotes;
+create policy "Allow delete product_upvotes" on public.product_upvotes for delete using (true);
 
 -- Products RLS Policy
 drop policy if exists "Allow public read products" on public.products;
@@ -282,5 +299,25 @@ begin
   ) then
     alter publication supabase_realtime add table public.community_posts;
   end if;
+
+  if not exists (
+    select 1 from pg_publication_tables 
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'product_upvotes'
+  ) then
+    alter publication supabase_realtime add table public.product_upvotes;
+  end if;
 end $$;
+
+-- ========================================================
+-- 필수 권한 부여: anon 및 authenticated 역할에게 테이블 권한 부여
+-- 비로그인 사용자 및 신규 세션이 42501 (permission denied) 에러 없이 정상 조회할 수 있도록 필수 실행!
+-- ========================================================
+grant usage on schema public to anon, authenticated;
+grant all on all tables in schema public to anon, authenticated;
+grant all on all sequences in schema public to anon, authenticated;
+grant all on all routines in schema public to anon, authenticated;
+
+alter default privileges in schema public grant all on tables to anon, authenticated;
+alter default privileges in schema public grant all on sequences to anon, authenticated;
+alter default privileges in schema public grant all on routines to anon, authenticated;
 

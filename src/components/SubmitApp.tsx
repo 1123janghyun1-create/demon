@@ -1024,7 +1024,7 @@ export const SubmitApp: React.FC = () => {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
                   <label className="text-xs font-bold text-fg">제품 상세 설명</label>
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20">
@@ -1064,7 +1064,7 @@ export const SubmitApp: React.FC = () => {
               {descTab === 'edit' ? (
                 <>
                   {/* Rich Markdown Toolbar */}
-                  <div className="flex items-center gap-1 p-2 rounded-t-btn border border-b-0 border-border bg-surface-2 text-fg-muted">
+                  <div className="flex items-center gap-1 p-2 rounded-t-btn border border-b-0 border-border bg-surface-2 text-fg-muted overflow-x-auto">
                     <button
                       type="button"
                       onClick={() => applyMarkdown('**', '**')}

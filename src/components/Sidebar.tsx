@@ -2,6 +2,7 @@ import React from 'react';
 import { LayoutGrid, Users, Trophy, PlusCircle, MessageSquare, Sparkles, Sun, Moon, LogIn, LogOut, Edit3 } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { NavTab } from '../types';
+import { GoogleTranslate } from './GoogleTranslate';
 
 interface SidebarProps {
   mobileOpen?: boolean;
@@ -210,6 +211,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
               </span>
               <span className="text-[11px] text-fg-muted">{darkMode ? 'Dark' : 'Light'}</span>
             </button>
+
+            {/* Language Selector (Mobile) */}
+            <div className="pt-2 border-t border-border/60 flex justify-center lg:hidden">
+              <GoogleTranslate />
+            </div>
           </div>
         </div>
       </aside>

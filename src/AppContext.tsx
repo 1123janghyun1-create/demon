@@ -14,6 +14,8 @@ import {
   incrementProductViewsInDB,
   incrementProductUpvoteInDB,
   decrementProductUpvoteInDB,
+  fetchUserUpvotesFromDB,
+  recordProductUpvoteInDB,
   fetchFeedbacksFromDB,
   insertFeedbackToDB,
   deleteFeedbackFromDB,
@@ -599,13 +601,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
         localStorage.setItem('demon_user', JSON.stringify(updated));
         syncUserToBuilders(updated);
+
+        // Immediately refresh products, feedbacks, builders & user upvotes as authenticated user!
+        fetchProductsFromDB().then((dbProducts) => {
+          if (dbProducts && dbProducts.length > 0) {
+            setProducts((prevLocal) => {
+              const remoteIds = new Set(dbProducts.map((p) => p.id));
+              const localOnly = prevLocal.filter((p) => !remoteIds.has(p.id));
+              return [...dbProducts, ...localOnly];
+            });
+          }
+        });
+        fetchFeedbacksFromDB().then((dbFeedbacks) => {
+          if (dbFeedbacks && Object.keys(dbFeedbacks).length > 0) {
+            setFeedbacks((prev) => ({ ...prev, ...dbFeedbacks }));
+          }
+        });
+        refreshBuilders();
+
         return updated;
       });
 
       // Thoroughly clean URL tokens after capturing session
       cleanAuthUrl();
     },
-    [syncUserToBuilders, cleanAuthUrl]
+    [syncUserToBuilders, cleanAuthUrl, refreshBuilders]
   );
 
   // Supabase Auth Listener & OAuth Redirect Processor
@@ -937,19 +957,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Save to Supabase DB in background
     insertFeedbackToDB(newFb).catch((err) => console.warn('Supabase feedback save error:', err));
 
-    // Trigger Notification for the author/user
-    const targetProduct = products.find((p) => p.id === productId || p.slug === productId);
-    addNotification({
-      type: 'feedback',
-      title: '새로운 테스트 피드백 도착 ⭐',
-      message: `${fb.author || '익명 테스터'}님이 '${targetProduct?.title || '내 프로젝트'}'에 피드백을 남겼습니다: "${fb.content.slice(0, 45)}${fb.content.length > 45 ? '...' : ''}"`,
-      senderName: fb.author || '익명 테스터',
-      senderAvatar: fb.avatar || '/demon-mascot.png',
-      productId: targetProduct?.id || productId,
-      productTitle: targetProduct?.title || '프로젝트',
-      commentText: fb.content,
-    });
-
     setLeaderboard((prev) => {
       const authorName = fb.author || '익명 테스터';
       const existing = prev.find((u) => u.name === authorName);
@@ -1123,15 +1130,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('피드백이 삭제되었습니다.');
   };
 
-  // Upvoted Products State (LocalStorage)
+  // Upvoted Products State (Per-user persistent state)
   const [upvotedProductIds, setUpvotedProductIds] = useState<string[]>(() => {
     try {
-      const saved = localStorage.getItem('demon_upvoted_products');
+      const savedUser = localStorage.getItem('demon_user');
+      const uId = savedUser ? JSON.parse(savedUser)?.id : '';
+      const key = uId ? `demon_upvotes_${uId}` : 'demon_upvoted_products';
+      const saved = localStorage.getItem(key);
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
     }
   });
+
+  // Sync user-specific upvotes on login or user switch
+  useEffect(() => {
+    const uId = user.isLoggedIn ? (user.id || user.email) : '';
+    if (uId) {
+      const key = `demon_upvotes_${uId}`;
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        try {
+          setUpvotedProductIds(JSON.parse(saved));
+        } catch {}
+      }
+
+      fetchUserUpvotesFromDB(uId).then((remoteIds) => {
+        if (remoteIds && remoteIds.length > 0) {
+          setUpvotedProductIds((prev) => {
+            const merged = Array.from(new Set([...prev, ...remoteIds]));
+            try {
+              localStorage.setItem(key, JSON.stringify(merged));
+            } catch {}
+            return merged;
+          });
+        }
+      });
+    } else {
+      setUpvotedProductIds([]);
+    }
+  }, [user.isLoggedIn, user.id, user.email]);
 
   const isProductUpvoted = useCallback(
     (productId: string) => upvotedProductIds.includes(productId),
@@ -1169,10 +1207,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch {}
   }, []);
 
-  // Toggle Product Upvote (with requireAuth)
+  // Toggle Product Upvote (with requireAuth & Per-User DB Tracking)
   const toggleProductUpvote = useCallback(
     (productId: string) => {
       requireAuth(() => {
+        const uId = user.id || user.email || 'user';
+        const key = `demon_upvotes_${uId}`;
         const isUpvoted = upvotedProductIds.includes(productId);
         const nextUpvoted = isUpvoted
           ? upvotedProductIds.filter((id) => id !== productId)
@@ -1180,7 +1220,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         setUpvotedProductIds(nextUpvoted);
         try {
-          localStorage.setItem('demon_upvoted_products', JSON.stringify(nextUpvoted));
+          localStorage.setItem(key, JSON.stringify(nextUpvoted));
         } catch {}
 
         const delta = isUpvoted ? -1 : 1;
@@ -1207,29 +1247,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return prev;
         });
 
+        // Record persistent user-product association in DB (prevents multi-voting across logins)
+        recordProductUpvoteInDB(uId, productId, !isUpvoted).catch(() => {});
+
         if (isUpvoted) {
           decrementProductUpvoteInDB(productId).catch(() => {});
           showToast('추천을 취소했습니다.');
         } else {
           incrementProductUpvoteInDB(productId).catch(() => {});
           showToast('🔥 프로젝트를 추천(업보트)했습니다!');
-
-          // Trigger Notification for the author/user
-          const targetProduct = products.find((p) => p.id === productId || p.slug === productId);
-          const newCount = (targetProduct?.upvotes || 0) + 1;
-          addNotification({
-            type: 'upvote',
-            title: '프로젝트 업보트 알림 🔥',
-            message: `${user.name || '동료 메이커'}님이 '${targetProduct?.title || '내 프로젝트'}'에 업보트를 남겼습니다! (추천 ${newCount}개)`,
-            senderName: user.name || '동료 메이커',
-            senderAvatar: user.avatar || '/demon-mascot.png',
-            productId: targetProduct?.id || productId,
-            productTitle: targetProduct?.title || '프로젝트',
-          });
         }
       }, '프로젝트를 추천(업보트)하려면 로그인이 필요합니다.');
     },
-    [upvotedProductIds, requireAuth, showToast, products, user, addNotification]
+    [upvotedProductIds, requireAuth, showToast, user]
   );
 
   const nextQuote = () => {

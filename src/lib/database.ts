@@ -238,6 +238,50 @@ export async function decrementProductUpvoteInDB(productId: string): Promise<boo
   }
 }
 
+// User-specific Upvote Management (Prevents multiple upvoting across logins/devices)
+export async function fetchUserUpvotesFromDB(userId: string): Promise<string[]> {
+  if (!supabase || !userId) return [];
+  try {
+    const { data, error } = await supabase
+      .from('product_upvotes')
+      .select('product_id')
+      .eq('user_id', userId);
+    if (!error && Array.isArray(data)) {
+      return data.map((row: any) => row.product_id).filter(Boolean);
+    }
+  } catch (err) {
+    console.warn('fetchUserUpvotesFromDB warning:', err);
+  }
+  return [];
+}
+
+export async function recordProductUpvoteInDB(userId: string, productId: string, isUpvoted: boolean): Promise<boolean> {
+  if (!supabase || !userId || !productId) return true;
+  try {
+    if (isUpvoted) {
+      const { error } = await supabase
+        .from('product_upvotes')
+        .upsert([{ user_id: userId, product_id: productId }]);
+      if (error) {
+        console.warn('recordProductUpvoteInDB insert warning:', error.message);
+      }
+    } else {
+      const { error } = await supabase
+        .from('product_upvotes')
+        .delete()
+        .eq('user_id', userId)
+        .eq('product_id', productId);
+      if (error) {
+        console.warn('recordProductUpvoteInDB delete warning:', error.message);
+      }
+    }
+    return true;
+  } catch (err) {
+    console.warn('recordProductUpvoteInDB warning:', err);
+    return false;
+  }
+}
+
 export async function deleteProductFromDB(productId: string): Promise<boolean> {
   syncApiPost('products', 'delete', { id: productId });
 

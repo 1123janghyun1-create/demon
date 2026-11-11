@@ -200,13 +200,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
       <div
         className="relative w-full max-w-[760px] max-h-[92vh] overflow-y-auto rounded-card border border-border bg-surface shadow-elevated transition-all"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header bar */}
-        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-surface/90 px-6 py-4 backdrop-blur-md">
+        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-surface/90 px-4 sm:px-6 py-3 sm:py-4 backdrop-blur-md">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold px-2 py-0.5 rounded-pill bg-brand-subtle text-accent">
               {isEditing ? '제품 수정' : '앱 테스트'}
@@ -219,7 +219,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Author Action Buttons (Edit / Delete) */}
             {isAuthor && !isEditing && (
               <>
@@ -491,10 +491,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
           /* ============================================================ */
           /* NORMAL VIEW MODE                                             */
           /* ============================================================ */
-          <div className="p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border">
-              <div className="flex items-center gap-4">
-                <div className="size-16 shrink-0 overflow-hidden rounded-[15px] bg-surface-2 ring-1 ring-inset ring-border">
+          <div className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-border">
+              <div className="flex items-start sm:items-center gap-3.5 sm:gap-4 min-w-0">
+                <div className="size-14 sm:size-16 shrink-0 overflow-hidden rounded-[14px] sm:rounded-[15px] bg-surface-2 ring-1 ring-inset ring-border">
                   <img
                     src={product.icon}
                     alt={`${product.title} 로고`}
@@ -505,11 +505,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                     }}
                   />
                 </div>
-                <div>
-                  <h1 className="text-xl font-extrabold text-fg tracking-tight">
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-lg sm:text-xl font-extrabold text-fg tracking-tight break-words">
                     {product.title}
                   </h1>
-                  <p className="mt-1 text-sm text-fg-muted">
+                  <p className="mt-1 text-xs sm:text-sm text-fg-muted break-words">
                     {product.tagline}
                   </p>
                   <div className="mt-2 flex items-center gap-2 text-xs text-fg-muted flex-wrap">
@@ -544,7 +544,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                       <span>추천 {product.upvotes || 0}개</span>
                     </span>
                     {product.tags && product.tags.length > 0 && (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 flex-wrap">
                         {product.tags.map((t) => (
                           <span key={t} className="rounded-pill bg-surface-2 px-1.5 py-0.2 text-[10px] text-fg-muted border border-border">
                             #{t}
@@ -583,12 +583,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
               </div>
 
               {/* Upvote & Open App Link Buttons */}
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0">
                 <button
                   type="button"
                   onClick={() => toggleProductUpvote(product.id)}
                   title={isProductUpvoted(product.id) ? '추천 취소' : '이 앱 추천하기'}
-                  className={`inline-flex items-center justify-center gap-1.5 rounded-btn px-4 py-2.5 text-sm font-bold shadow-sm transition-all border ${
+                  className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-btn px-4 py-2.5 text-sm font-bold shadow-sm transition-all border ${
                     isProductUpvoted(product.id)
                       ? 'bg-rose-500 border-rose-600 text-white shadow-rose-500/20'
                       : 'bg-surface-2 border-border text-fg hover:border-rose-500/40 hover:text-rose-500'
@@ -602,7 +602,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                   href={product.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 rounded-btn bg-accent px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-accent-hover transition-colors shrink-0"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-btn bg-accent px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-accent-hover transition-colors shrink-0"
                 >
                   <span>앱 열기</span>
                   <ExternalLink className="h-4 w-4" />

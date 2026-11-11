@@ -151,11 +151,11 @@ export const AppList: React.FC = () => {
                   incrementProductViews(product.id);
                 }
               }}
-              className="group relative flex cursor-pointer items-center justify-between gap-4 rounded-card border border-border bg-surface p-4 shadow-card transition-all duration-150 hover:border-border-strong hover:shadow-card-hover no-underline text-fg"
+              className="group relative flex flex-col sm:flex-row cursor-pointer sm:items-center justify-between gap-3.5 sm:gap-4 rounded-card border border-border bg-surface p-3.5 sm:p-4 shadow-card transition-all duration-150 hover:border-border-strong hover:shadow-card-hover no-underline text-fg"
             >
-              {/* Left: Icon + Info */}
-              <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                <div className="relative size-14 shrink-0 overflow-hidden rounded-[15px] bg-surface-2 ring-1 ring-inset ring-border/60">
+              {/* Top / Left: Icon + Info */}
+              <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
+                <div className="relative size-12 sm:size-14 shrink-0 overflow-hidden rounded-[13px] sm:rounded-[15px] bg-surface-2 ring-1 ring-inset ring-border/60">
                   <img
                     src={product.icon}
                     alt={`${product.title} 로고`}
@@ -165,104 +165,107 @@ export const AppList: React.FC = () => {
                     }}
                     className="h-full w-full object-cover"
                   />
-                  <div className="absolute inset-0 -z-10 flex items-center justify-center font-bold text-fg-muted text-lg bg-surface-2">
+                  <div className="absolute inset-0 -z-10 flex items-center justify-center font-bold text-fg-muted text-base sm:text-lg bg-surface-2">
                     {product.title.slice(0, 1)}
                   </div>
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base font-bold text-fg tracking-tight group-hover:text-accent transition-colors truncate">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                    <h2 className="text-sm sm:text-base font-bold text-fg tracking-tight group-hover:text-accent transition-colors truncate">
                       {product.title}
                     </h2>
                     {product.isNew && (
-                      <span className="shrink-0 rounded-pill bg-rose-500/10 px-2 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                      <span className="shrink-0 rounded-pill bg-rose-500/10 px-1.5 py-0.2 sm:px-2 sm:py-0.5 text-[9px] sm:text-[10px] font-bold text-rose-600 dark:text-rose-400">
                         NEW
                       </span>
                     )}
-                    <span className="shrink-0 text-[11px] text-fg-muted">
+                    <span className="shrink-0 text-[10px] sm:text-[11px] text-fg-muted">
                       {product.category}
                     </span>
                     {user.isLoggedIn && (product.author === user.name || product.authorId === user.id || (user.email && product.author === user.email)) && (
-                      <span className="shrink-0 rounded-pill bg-accent/10 px-2 py-0.5 text-[10px] font-bold text-accent border border-accent/20">
+                      <span className="shrink-0 rounded-pill bg-accent/10 px-1.5 py-0.2 sm:px-2 sm:py-0.5 text-[9px] sm:text-[10px] font-bold text-accent border border-accent/20">
                         내 제품
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-sm text-fg-muted truncate">
+                  <p className="mt-1 text-xs sm:text-sm text-fg-muted line-clamp-2 sm:truncate leading-snug">
                     {product.tagline}
                   </p>
                 </div>
               </div>
 
-              {/* Right: Views + Feedback count + Upvote button + External Website link + View page button */}
-              <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-                {/* Views */}
-                <div
-                  className="flex items-center gap-1 text-xs text-fg-muted"
-                  title="조회수"
-                >
-                  <Eye className="h-3.5 w-3.5 text-fg-muted" />
-                  <span>{product.views || 0}</span>
+              {/* Bottom (Mobile) / Right (Desktop): Stats + Actions */}
+              <div className="flex shrink-0 items-center justify-between sm:justify-end gap-2 sm:gap-3 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-border/50">
+                {/* Views & Feedback Count */}
+                <div className="flex items-center gap-2.5 sm:gap-3 text-xs text-fg-muted">
+                  <div
+                    className="flex items-center gap-1 text-[11px] sm:text-xs text-fg-muted"
+                    title="조회수"
+                  >
+                    <Eye className="h-3.5 w-3.5 text-fg-muted" />
+                    <span>{product.views || 0}</span>
+                  </div>
+
+                  <div
+                    className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-fg-muted"
+                    title="등록된 피드백 수"
+                  >
+                    <MessageSquare className="h-3.5 w-3.5 text-accent" />
+                    <span className="hidden sm:inline">피드백</span>
+                    <span>{product.feedbackCount}건</span>
+                  </div>
                 </div>
 
-                {/* Feedback count */}
-                <div
-                  className="flex items-center gap-1 text-xs font-semibold text-fg-muted"
-                  title="등록된 피드백 수"
-                >
-                  <MessageSquare className="h-3.5 w-3.5 text-accent" />
-                  <span className="hidden sm:inline">피드백</span>
-                  <span>{product.feedbackCount}건</span>
-                </div>
-
-                {/* Upvote Button */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    toggleProductUpvote(product.id);
-                  }}
-                  title={isProductUpvoted(product.id) ? '추천 취소' : '추천(업보트)'}
-                  className={`group/vote flex items-center gap-1.5 rounded-btn px-2.5 py-1.5 text-xs font-bold transition-all border shrink-0 ${
-                    isProductUpvoted(product.id)
-                      ? 'bg-rose-500/10 border-rose-500/40 text-rose-600 dark:text-rose-400 shadow-sm'
-                      : 'bg-surface-2 border-border text-fg hover:border-rose-500/40 hover:text-rose-500'
-                  }`}
-                >
-                  <ChevronUp
-                    className={`w-3.5 h-3.5 transition-transform ${
-                      isProductUpvoted(product.id)
-                        ? 'text-rose-500 scale-125'
-                        : 'text-fg-muted group-hover/vote:text-rose-500 group-hover/vote:-translate-y-0.5'
-                    }`}
-                  />
-                  <span>{product.upvotes || 0}</span>
-                </button>
-
-                {/* Direct External Project URL for Googlebot & users */}
-                {product.url && (
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  {/* Upvote Button */}
                   <button
                     type="button"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      window.open(product.url.startsWith('http') ? product.url : `https://${product.url}`, '_blank', 'noopener,noreferrer');
+                      toggleProductUpvote(product.id);
                     }}
-                    title={`${product.title} 외부 웹사이트 방문`}
-                    className="inline-flex items-center gap-1 rounded-btn border border-border bg-surface-2 px-2.5 py-1.5 text-xs font-semibold text-fg hover:bg-surface-3 hover:text-accent transition-colors shrink-0"
+                    title={isProductUpvoted(product.id) ? '추천 취소' : '추천(업보트)'}
+                    className={`group/vote flex items-center gap-1 sm:gap-1.5 rounded-btn px-2.5 py-1.5 text-xs font-bold transition-all border shrink-0 ${
+                      isProductUpvoted(product.id)
+                        ? 'bg-rose-500/10 border-rose-500/40 text-rose-600 dark:text-rose-400 shadow-sm'
+                        : 'bg-surface-2 border-border text-fg hover:border-rose-500/40 hover:text-rose-500'
+                    }`}
                   >
-                    <ExternalLink className="w-3.5 h-3.5 text-fg-muted" />
-                    <span className="hidden md:inline">방문</span>
+                    <ChevronUp
+                      className={`w-3.5 h-3.5 transition-transform ${
+                        isProductUpvoted(product.id)
+                          ? 'text-rose-500 scale-125'
+                          : 'text-fg-muted group-hover/vote:text-rose-500 group-hover/vote:-translate-y-0.5'
+                      }`}
+                    />
+                    <span>{product.upvotes || 0}</span>
                   </button>
-                )}
 
-                <span
-                  className="hidden sm:inline-flex items-center gap-1 rounded-btn border border-border bg-surface-2 px-3 py-1.5 text-xs font-semibold text-fg group-hover:bg-accent group-hover:text-white transition-colors"
-                >
-                  상세 보기
-                </span>
+                  {/* Direct External Project URL */}
+                  {product.url && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.open(product.url.startsWith('http') ? product.url : `https://${product.url}`, '_blank', 'noopener,noreferrer');
+                      }}
+                      title={`${product.title} 외부 웹사이트 방문`}
+                      className="inline-flex items-center gap-1 rounded-btn border border-border bg-surface-2 px-2.5 py-1.5 text-xs font-semibold text-fg hover:bg-surface-3 hover:text-accent transition-colors shrink-0"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 text-fg-muted" />
+                      <span className="hidden md:inline">방문</span>
+                    </button>
+                  )}
+
+                  <span
+                    className="hidden sm:inline-flex items-center gap-1 rounded-btn border border-border bg-surface-2 px-3 py-1.5 text-xs font-semibold text-fg group-hover:bg-accent group-hover:text-white transition-colors"
+                  >
+                    상세 보기
+                  </span>
+                </div>
               </div>
             </a>
           ))
