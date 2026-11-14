@@ -55,10 +55,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
         builders.find(
           (b) =>
             (product.authorId && b.id === product.authorId) ||
-            b.name.toLowerCase() === product.author.toLowerCase()
+            (product.authorEmail && b.email && b.email.toLowerCase() === product.authorEmail.toLowerCase()) ||
+            (product.authorId && b.email && b.email.toLowerCase() === product.authorId.toLowerCase())
         ) || {
-          id: product.authorId || 'builder-' + product.id,
+          id: product.authorId || (product.authorEmail ? 'builder-' + product.authorEmail : 'builder-' + product.id),
           name: product.author,
+          email: product.authorEmail,
           role: '인디 메이커',
           bio: `'${product.title}'의 제작자입니다.`,
           avatar: product.icon || '/demon-mascot.png',
@@ -79,12 +81,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
     }
   }, [product?.id, incrementProductViews]);
 
-  // Check if current user is the owner/author of this product
+  // Check if current user is the owner/author of this product (strictly by ID or Email)
   const isAuthor =
     user.isLoggedIn &&
     Boolean(
-      (product.authorId && (product.authorId === user.id || product.authorId === user.email)) ||
-      (product.author && (product.author === user.name || product.author === user.email || product.author === user.id))
+      (product.authorId && product.authorId === user.id) ||
+      (product.authorEmail && user.email && product.authorEmail.toLowerCase() === user.email.toLowerCase()) ||
+      (user.email && (product.authorId === user.email || product.author === user.email))
     );
 
   // Edit Mode States
@@ -515,7 +518,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                   <div className="mt-2 flex items-center gap-2 text-xs text-fg-muted flex-wrap">
                     <span className="font-medium text-fg-secondary flex items-center gap-1.5 flex-wrap">
                       <span>제작: <strong className="font-bold text-fg">{product.author}</strong></span>
-                      {(!user.isLoggedIn || (user.name !== product.author && user.id !== product.authorId)) && (
+                      {(!user.isLoggedIn || !isAuthor) && (
                         <button
                           type="button"
                           onClick={handleAuthorDm}
@@ -835,7 +838,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                               />
                             ))}
                           </div>
-                          {user.isLoggedIn && (fb.author === user.name || fb.authorId === user.id || (user.email && fb.author === user.email)) && (
+                          {user.isLoggedIn && Boolean(
+                            (fb.authorId && fb.authorId === user.id) ||
+                            (fb.authorEmail && user.email && fb.authorEmail.toLowerCase() === user.email.toLowerCase()) ||
+                            (user.email && (fb.authorId === user.email || fb.author === user.email))
+                          ) && (
                             <button
                               type="button"
                               onClick={() => {

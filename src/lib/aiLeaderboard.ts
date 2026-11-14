@@ -56,25 +56,32 @@ export function computeAiLeaderboard(
   communityPosts: CommunityPost[],
   currentUser: UserProfile
 ): LeaderboardUser[] {
-  // 1. Gather all actual registered demonst members into a unified map
+  // 1. Gather all actual registered demonst members into a unified map keyed by ID or email
   const registeredMakers = new Map<string, Builder>();
 
   // Add all existing builders from database/file
   (builders || []).forEach((b) => {
-    if (b && b.name) {
-      registeredMakers.set(b.id || b.name, b);
+    if (b && (b.id || b.email)) {
+      const key = b.id || b.email || '';
+      registeredMakers.set(key, b);
     }
   });
 
-  // Ensure current logged-in user is included if registered
-  if (currentUser && currentUser.isLoggedIn && currentUser.name) {
-    const key = currentUser.id || currentUser.email || currentUser.name;
-    const existing = registeredMakers.get(key) || Array.from(registeredMakers.values()).find((b) => b.name === currentUser.name || (currentUser.email && b.email === currentUser.email));
+  // Ensure current logged-in user is included if registered (identified strictly by ID or email)
+  if (currentUser && currentUser.isLoggedIn && (currentUser.id || currentUser.email)) {
+    const key = currentUser.id || currentUser.email || '';
+    const existing =
+      registeredMakers.get(key) ||
+      Array.from(registeredMakers.values()).find(
+        (b) =>
+          (currentUser.id && b.id === currentUser.id) ||
+          (currentUser.email && b.email && b.email.toLowerCase() === currentUser.email.toLowerCase())
+      );
 
     if (existing) {
-      registeredMakers.set(existing.id || existing.name, {
+      registeredMakers.set(existing.id || existing.email || key, {
         ...existing,
-        name: currentUser.name,
+        name: currentUser.name || existing.name,
         avatar: currentUser.avatar || existing.avatar,
         role: currentUser.role || existing.role || '인디 메이커',
         email: currentUser.email || existing.email,
@@ -157,42 +164,37 @@ export function computeAiLeaderboard(
     if (authorId) communityStatsByAuthor[authorId] = (communityStatsByAuthor[authorId] || 0) + 1;
   });
 
-  // 3. Score ONLY the actual registered members of demonst
+  // 3. Score ONLY the actual registered members of demonst (by unique ID / email)
   const leaderboardList: LeaderboardUser[] = [];
 
   registeredMakers.forEach((builder) => {
     const idKey = builder.id || '';
-    const nameKey = builder.name || '';
-    const emailKey = builder.email || '';
+    const emailKey = (builder.email || '').toLowerCase();
 
-    // Match product stats by ID, name, or email
+    // Match product stats by ID or email ONLY (never conflate different people sharing the same name)
     const pById = idKey ? productStatsByAuthor[idKey] : null;
-    const pByName = nameKey ? productStatsByAuthor[nameKey] : null;
     const pByEmail = emailKey ? productStatsByAuthor[emailKey] : null;
 
-    const launchedCount = Math.max(pById?.count || 0, pByName?.count || 0, pByEmail?.count || 0);
-    const upvotes = Math.max(pById?.upvotes || 0, pByName?.upvotes || 0, pByEmail?.upvotes || 0);
-    const views = Math.max(pById?.views || 0, pByName?.views || 0, pByEmail?.views || 0);
+    const launchedCount = Math.max(pById?.count || 0, pByEmail?.count || 0);
+    const upvotes = Math.max(pById?.upvotes || 0, pByEmail?.upvotes || 0);
+    const views = Math.max(pById?.views || 0, pByEmail?.views || 0);
     const launchedTitles = Array.from(
-      new Set([...(pById?.titles || []), ...(pByName?.titles || []), ...(pByEmail?.titles || [])])
+      new Set([...(pById?.titles || []), ...(pByEmail?.titles || [])])
     );
 
-    // Match feedback stats
+    // Match feedback stats by ID or email ONLY
     const fbById = idKey ? feedbackStatsByAuthor[idKey] : null;
-    const fbByName = nameKey ? feedbackStatsByAuthor[nameKey] : null;
     const fbByEmail = emailKey ? feedbackStatsByAuthor[emailKey] : null;
 
-    const fbCount = Math.max(fbById?.count || 0, fbByName?.count || 0, fbByEmail?.count || 0);
+    const fbCount = Math.max(fbById?.count || 0, fbByEmail?.count || 0);
     const testedCount = Math.max(
       fbById?.apps.size || 0,
-      fbByName?.apps.size || 0,
       fbByEmail?.apps.size || 0
     );
 
-    // Match community stats
+    // Match community stats by ID or email ONLY
     const cCount = Math.max(
       communityStatsByAuthor[idKey] || 0,
-      communityStatsByAuthor[nameKey] || 0,
       communityStatsByAuthor[emailKey] || 0
     );
 
@@ -210,11 +212,12 @@ export function computeAiLeaderboard(
       (views > 0 ? Math.floor(views / 5) : 0);
 
     const badge = determineAiBadge(fbCount, launchedCount, upvotes, cCount);
-    const aiCommentary = generateAiCommentary(nameKey, fbCount, launchedCount, upvotes, launchedTitles);
+    const aiCommentary = generateAiCommentary(builder.name, fbCount, launchedCount, upvotes, launchedTitles);
 
     leaderboardList.push({
       rank: 0,
       name: builder.name,
+      email: builder.email,
       avatar: builder.avatar || '/demon-mascot.png',
       role: builder.role || '인디 메이커',
       feedbackCount: fbCount,

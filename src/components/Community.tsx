@@ -207,7 +207,11 @@ export const Community: React.FC = () => {
                 <span className="rounded-pill bg-brand-subtle px-2 py-0.5 text-[10px] font-bold text-accent">
                   {post.tag}
                 </span>
-                {user.isLoggedIn && (post.author === user.name || post.authorId === user.id || (user.email && post.author === user.email)) && (
+                {user.isLoggedIn && Boolean(
+                  (post.authorId && post.authorId === user.id) ||
+                  (post.authorEmail && user.email && post.authorEmail.toLowerCase() === user.email.toLowerCase()) ||
+                  (user.email && (post.authorId === user.email || post.author === user.email))
+                ) && (
                   <button
                     type="button"
                     onClick={() => {

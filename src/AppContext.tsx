@@ -24,6 +24,9 @@ import {
   fetchCommunityPostsFromDB,
   insertCommunityPostToDB,
   deleteCommunityPostFromDB,
+  fetchDirectMessagesFromDB,
+  sendDirectMessageToDB,
+  markDirectMessagesAsReadInDB,
 } from './lib/database';
 import { pingSearchEngines } from './lib/seoPinger';
 
@@ -291,20 +294,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications([]);
   }, []);
 
-  const markDmThreadAsRead = useCallback((builderId: string) => {
-    setDmMessages((prev) => {
-      const list = prev[builderId];
-      if (!list) return prev;
-      return {
-        ...prev,
-        [builderId]: list.map((m) => ({ ...m, read: true })),
-      };
-    });
-    // Also mark DM notifications for this builder as read
-    setNotifications((prev) =>
-      prev.map((n) => (n.type === 'dm' && n.builderId === builderId ? { ...n, read: true } : n))
-    );
-  }, []);
+  // Function to load all real direct messages for the logged-in user from Supabase
+  const refreshDirectMessages = useCallback(async () => {
+    const currentId = user.id || user.email;
+    if (!user.isLoggedIn || !currentId) return;
+
+    try {
+      const dbMsgs = await fetchDirectMessagesFromDB(currentId);
+      if (dbMsgs && dbMsgs.length > 0) {
+        setDmMessages((prev) => {
+          const grouped: Record<string, DirectMessage[]> = { ...prev };
+
+          dbMsgs.forEach((msg) => {
+            const partnerId = msg.senderId === currentId ? msg.receiverId : msg.senderId;
+            if (!grouped[partnerId]) grouped[partnerId] = [];
+            const exists = grouped[partnerId].some((m) => m.id === msg.id);
+            if (!exists) {
+              grouped[partnerId].push(msg);
+            } else {
+              grouped[partnerId] = grouped[partnerId].map((m) => (m.id === msg.id ? msg : m));
+            }
+          });
+
+          try {
+            localStorage.setItem('demon_dm_messages', JSON.stringify(grouped));
+          } catch {}
+          return grouped;
+        });
+      }
+    } catch (e) {
+      console.warn('refreshDirectMessages error:', e);
+    }
+  }, [user.isLoggedIn, user.id, user.email]);
+
+  const markDmThreadAsRead = useCallback(
+    (builderId: string) => {
+      setDmMessages((prev) => {
+        const list = prev[builderId];
+        if (!list) return prev;
+        const next = {
+          ...prev,
+          [builderId]: list.map((m) => ({ ...m, read: true })),
+        };
+        try {
+          localStorage.setItem('demon_dm_messages', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+      // Also mark DM notifications for this builder as read
+      setNotifications((prev) =>
+        prev.map((n) => (n.type === 'dm' && n.builderId === builderId ? { ...n, read: true } : n))
+      );
+
+      // Persist read status in Supabase
+      const myId = user.id || user.email;
+      if (myId) {
+        markDirectMessagesAsReadInDB(myId, builderId).catch(() => {});
+      }
+    },
+    [user.id, user.email]
+  );
 
   const [quotes] = useState<Quote[]>(initialQuotes as Quote[]);
   const [quoteIdx, setQuoteIdx] = useState(0);
@@ -492,12 +541,161 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [refreshBuilders]);
 
-  // Sync Logged-in User into Builders list
+  // Supabase Real-time Listener for Direct Messages (Real Person-to-Person)
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase || !user.isLoggedIn) return;
+    const client = supabase;
+    const currentUserId = user.id;
+    const currentUserEmail = user.email ? user.email.toLowerCase() : '';
+
+    try {
+      const channel = client
+        .channel(`realtime:dm:${currentUserId || 'guest'}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'direct_messages' },
+          (payload) => {
+            const row = payload.new as any;
+            if (!row) return;
+
+            // Only process messages involving current user by ID or email
+            const sId = (row.sender_id || '').toLowerCase();
+            const rId = (row.receiver_id || '').toLowerCase();
+            const myId = (currentUserId || '').toLowerCase();
+            const myEmail = currentUserEmail;
+
+            const involvesMe =
+              sId === myId ||
+              rId === myId ||
+              (myEmail && (sId === myEmail || rId === myEmail));
+
+            if (!involvesMe) return;
+
+            const isMine = sId === myId || (Boolean(myEmail) && sId === myEmail);
+            const partnerId = isMine ? row.receiver_id : row.sender_id;
+
+            let timestamp = '방금';
+            if (row.created_at) {
+              const d = new Date(row.created_at);
+              if (!isNaN(d.getTime())) {
+                const hours = d.getHours();
+                const minutes = d.getMinutes().toString().padStart(2, '0');
+                const ampm = hours >= 12 ? '오후' : '오전';
+                const formattedHours = hours % 12 || 12;
+                timestamp = `${ampm} ${formattedHours}:${minutes}`;
+              }
+            }
+
+            const newMsg: DirectMessage = {
+              id: row.id,
+              senderId: row.sender_id,
+              receiverId: row.receiver_id,
+              text: row.text,
+              timestamp,
+              isMine,
+              read: Boolean(row.read),
+            };
+
+            setDmMessages((prev) => {
+              const list = prev[partnerId] || [];
+              if (list.some((m) => m.id === newMsg.id)) return prev;
+              const next = {
+                ...prev,
+                [partnerId]: [...list, newMsg],
+              };
+              try {
+                localStorage.setItem('demon_dm_messages', JSON.stringify(next));
+              } catch {}
+              return next;
+            });
+
+            // If incoming message from someone else:
+            if (!isMine) {
+              const senderBuilder = builders.find(
+                (b) =>
+                  b.id === row.sender_id ||
+                  (b.email && b.email.toLowerCase() === (row.sender_id || '').toLowerCase())
+              );
+              const senderName = senderBuilder?.name || '상대방 빌더';
+
+              addNotification({
+                type: 'dm',
+                title: `${senderName}님의 새 1:1 메시지`,
+                message: row.text,
+                senderName: senderName,
+                senderAvatar: senderBuilder?.avatar || '/demon-mascot.png',
+                builderId: partnerId,
+              });
+
+              showToast(`💬 ${senderName}: "${row.text.length > 25 ? row.text.slice(0, 25) + '...' : row.text}"`);
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'direct_messages' },
+          (payload) => {
+            const row = payload.new as any;
+            if (!row) return;
+
+            const sId = (row.sender_id || '').toLowerCase();
+            const rId = (row.receiver_id || '').toLowerCase();
+            const myId = (currentUserId || '').toLowerCase();
+            const myEmail = currentUserEmail;
+
+            const involvesMe =
+              sId === myId ||
+              rId === myId ||
+              (myEmail && (sId === myEmail || rId === myEmail));
+
+            if (!involvesMe) return;
+
+            const isMine = sId === myId || (Boolean(myEmail) && sId === myEmail);
+            const partnerId = isMine ? row.receiver_id : row.sender_id;
+
+            setDmMessages((prev) => {
+              const list = prev[partnerId];
+              if (!list) return prev;
+              return {
+                ...prev,
+                [partnerId]: list.map((m) => (m.id === row.id ? { ...m, read: Boolean(row.read) } : m)),
+              };
+            });
+          }
+        )
+        .subscribe();
+
+      return () => {
+        client.removeChannel(channel);
+      };
+    } catch (e) {
+      console.warn('Realtime DM setup error:', e);
+    }
+  }, [user.isLoggedIn, user.id, user.email, builders, addNotification, showToast]);
+
+  // Periodic and on-modal-open DM refresh
+  useEffect(() => {
+    if (!user.isLoggedIn) return;
+    refreshDirectMessages();
+
+    // Poll every 10 seconds for real-time reliability across mobile networks
+    const interval = setInterval(() => {
+      refreshDirectMessages();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [user.isLoggedIn, refreshDirectMessages]);
+
+  // Sync Logged-in User into Builders list (Strictly by ID and Email, NEVER name!)
   const syncUserToBuilders = useCallback((currentUser: UserProfile) => {
     if (!currentUser.isLoggedIn || !currentUser.id) return;
 
     setBuilders((prev) => {
-      const idx = prev.findIndex((b) => b.id === currentUser.id || (currentUser.email && b.email === currentUser.email));
+      const idx = prev.findIndex(
+        (b) =>
+          b.id === currentUser.id ||
+          (currentUser.email && b.email && b.email.toLowerCase() === currentUser.email.toLowerCase())
+      );
       let updatedList: Builder[];
 
       if (idx !== -1) {
@@ -618,6 +816,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         });
         refreshBuilders();
+        refreshDirectMessages();
 
         return updated;
       });
@@ -625,7 +824,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Thoroughly clean URL tokens after capturing session
       cleanAuthUrl();
     },
-    [syncUserToBuilders, cleanAuthUrl, refreshBuilders]
+    [syncUserToBuilders, cleanAuthUrl, refreshBuilders, refreshDirectMessages]
   );
 
   // Supabase Auth Listener & OAuth Redirect Processor
@@ -884,52 +1083,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [requireAuth, markDmThreadAsRead]
   );
 
-  // Send Direct Message
+  // Send Direct Message (Real Person-to-Person via Supabase DB & Realtime)
   const sendDirectMessage = (builderId: string, text: string) => {
-    const newMsg: DirectMessage = {
-      id: 'dm-' + Date.now(),
-      senderId: user.id || 'me',
-      receiverId: builderId,
-      text: text.trim(),
-      timestamp: '방금',
-      isMine: true,
-      read: true,
-    };
+    requireAuth(() => {
+      const myId = user.id || user.email;
+      if (!myId) return;
 
-    setDmMessages((prev) => ({
-      ...prev,
-      [builderId]: [...(prev[builderId] || []), newMsg],
-    }));
+      const trimmed = text.trim();
+      if (!trimmed) return;
 
-    if (builderId !== user.id) {
-      const targetBuilder = builders.find((b) => b.id === builderId);
-      setTimeout(() => {
-        const replyMsg: DirectMessage = {
-          id: 'dm-reply-' + Date.now(),
-          senderId: builderId,
-          receiverId: user.id || 'me',
-          text: `안녕하세요 ${user.name}님! 메시지 확인했습니다. ${targetBuilder?.buildingApp ? `'${targetBuilder.buildingApp}' 관련 이야기` : '프로덕트 피드백'} 편하게 나눠요 😊`,
-          timestamp: '방금',
-          isMine: false,
-          read: false,
-        };
-        setDmMessages((prev) => ({
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? '오후' : '오전';
+      const formattedHours = hours % 12 || 12;
+      const timestamp = `${ampm} ${formattedHours}:${minutes}`;
+
+      const newMsg: DirectMessage = {
+        id: 'dm-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+        senderId: myId,
+        receiverId: builderId,
+        text: trimmed,
+        timestamp,
+        isMine: true,
+        read: false,
+      };
+
+      // 1. Optimistic local update
+      setDmMessages((prev) => {
+        const next = {
           ...prev,
-          [builderId]: [...(prev[builderId] || []), replyMsg],
-        }));
+          [builderId]: [...(prev[builderId] || []), newMsg],
+        };
+        try {
+          localStorage.setItem('demon_dm_messages', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
 
-        // Trigger DM Notification for user!
-        addNotification({
-          type: 'dm',
-          title: `${targetBuilder?.name || '빌더'}님의 새 1:1 메시지`,
-          message: replyMsg.text,
-          senderName: targetBuilder?.name || '빌더',
-          senderAvatar: targetBuilder?.avatar || '/demon-mascot.png',
-          builderId: builderId,
-        });
-        showToast(`💬 ${targetBuilder?.name || '빌더'}님으로부터 새로운 DM이 도착했습니다!`);
-      }, 1200);
-    }
+      // 2. Persist to Supabase Database (will broadcast to the recipient in real-time)
+      sendDirectMessageToDB(newMsg).then((success) => {
+        if (!success) {
+          console.warn('DM could not be saved to Supabase');
+        }
+      });
+
+      // NOTE: Removed fake mock bot setTimeout! Real users will reply themselves!
+    }, '메시지를 보내려면 먼저 Google 로그인이 필요합니다.');
   };
 
   // Add Feedback (Local + Supabase DB)
@@ -937,6 +1137,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newFb: Feedback = {
       ...fb,
       id: 'fb-' + Date.now(),
+      author: user.name || fb.author || '익명 테스터',
+      authorId: user.id || user.email || '',
+      authorEmail: user.email || '',
       createdAt: '방금 전',
     };
 
@@ -958,18 +1161,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     insertFeedbackToDB(newFb).catch((err) => console.warn('Supabase feedback save error:', err));
 
     setLeaderboard((prev) => {
-      const authorName = fb.author || '익명 테스터';
-      const existing = prev.find((u) => u.name === authorName);
+      const authorId = user.id || user.email;
+      const authorEmail = user.email ? user.email.toLowerCase() : '';
+      const existing = prev.find(
+        (u) =>
+          (authorId && u.builderId === authorId) ||
+          (authorEmail && u.email && u.email.toLowerCase() === authorEmail)
+      );
       let updated: LeaderboardUser[];
       if (existing) {
-        updated = prev.map((u) => (u.name === authorName ? { ...u, feedbackCount: u.feedbackCount + 1 } : u));
+        updated = prev.map((u) =>
+          (authorId && u.builderId === authorId) ||
+          (authorEmail && u.email && u.email.toLowerCase() === authorEmail)
+            ? { ...u, feedbackCount: u.feedbackCount + 1 }
+            : u
+        );
       } else {
         updated = [
           ...prev,
           {
             rank: prev.length + 1,
-            name: authorName,
-            avatar: fb.avatar || '/demon-mascot.png',
+            name: user.name || fb.author || '익명 테스터',
+            email: user.email,
+            builderId: user.id,
+            avatar: fb.avatar || user.avatar || '/demon-mascot.png',
             feedbackCount: 1,
           },
         ];
@@ -986,6 +1201,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newPost: CommunityPost = {
       ...post,
       id: 'c-' + Date.now(),
+      author: user.name || post.author || '데몬메이커',
+      authorId: user.id || user.email || '',
+      authorEmail: user.email || '',
       timeAgo: '방금 전',
       likes: 0,
       comments: 0,
@@ -1022,7 +1240,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...newApp,
       id: 'app-' + Date.now(),
       slug: slug || 'app-' + Date.now(),
+      author: newApp.author || user.name || '인디 메이커',
       authorId: newApp.authorId || user.id || user.email || '',
+      authorEmail: newApp.authorEmail || user.email || '',
       feedbackCount: 0,
       createdAt: '방금 전',
       isNew: true,

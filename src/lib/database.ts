@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Product, Feedback, Builder, CommunityPost } from '../types';
+import { Product, Feedback, Builder, CommunityPost, DirectMessage } from '../types';
 
 // ==========================================
 // Helper functions for Multi-Browser API Sync
@@ -570,5 +570,105 @@ export async function deleteCommunityPostFromDB(postId: string): Promise<boolean
     return !error;
   } catch {
     return true;
+  }
+}
+
+// ==========================================
+// 6. Direct Messages (1:1 실제 사람 간 실시간 대화)
+// ==========================================
+export async function fetchDirectMessagesFromDB(userId: string): Promise<DirectMessage[]> {
+  if (!supabase || !userId) return [];
+
+  try {
+    const { data, error } = await supabase
+      .from('direct_messages')
+      .select('*')
+      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+      .order('created_at', { ascending: true });
+
+    if (!error && Array.isArray(data)) {
+      return data.map((row: any) => {
+        let timestamp = '방금';
+        if (row.created_at) {
+          const d = new Date(row.created_at);
+          if (!isNaN(d.getTime())) {
+            const hours = d.getHours();
+            const minutes = d.getMinutes().toString().padStart(2, '0');
+            const ampm = hours >= 12 ? '오후' : '오전';
+            const formattedHours = hours % 12 || 12;
+            timestamp = `${ampm} ${formattedHours}:${minutes}`;
+          }
+        }
+
+        return {
+          id: row.id,
+          senderId: row.sender_id,
+          receiverId: row.receiver_id,
+          text: row.text,
+          timestamp: timestamp,
+          isMine: row.sender_id === userId,
+          read: Boolean(row.read),
+        };
+      });
+    } else if (error) {
+      console.warn('Supabase fetchDirectMessages warning:', error.message);
+    }
+  } catch (err) {
+    console.warn('Supabase fetchDirectMessages error:', err);
+  }
+
+  return [];
+}
+
+export async function sendDirectMessageToDB(msg: {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  text: string;
+}): Promise<boolean> {
+  // 1. Multi-browser fallback sync API
+  syncApiPost('messages', 'insert', msg);
+
+  if (!supabase) return true;
+
+  try {
+    const { error } = await supabase.from('direct_messages').insert([
+      {
+        id: msg.id,
+        sender_id: msg.senderId,
+        receiver_id: msg.receiverId,
+        text: msg.text,
+        read: false,
+        created_at: new Date().toISOString(),
+      },
+    ]);
+    if (error) {
+      console.warn('Supabase sendDirectMessage warning:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase sendDirectMessage error:', err);
+    return false;
+  }
+}
+
+export async function markDirectMessagesAsReadInDB(
+  myUserId: string,
+  partnerId: string
+): Promise<boolean> {
+  if (!supabase || !myUserId || !partnerId) return true;
+
+  try {
+    const { error } = await supabase
+      .from('direct_messages')
+      .update({ read: true })
+      .eq('sender_id', partnerId)
+      .eq('receiver_id', myUserId)
+      .eq('read', false);
+
+    return !error;
+  } catch {
+    return false;
   }
 }

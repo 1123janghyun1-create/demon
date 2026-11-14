@@ -12,6 +12,7 @@ export interface Product {
   url: string;
   author: string;
   authorId?: string;
+  authorEmail?: string;
   createdAt: string;
   isNew?: boolean;
   instructions: string;
@@ -36,6 +37,7 @@ export interface Feedback {
   productId: string;
   author: string;
   authorId?: string;
+  authorEmail?: string;
   avatar: string;
   rating: number;
   content: string;
@@ -48,6 +50,7 @@ export interface CommunityPost {
   id: string;
   author: string;
   authorId?: string;
+  authorEmail?: string;
   avatar: string;
   timeAgo: string;
   tag: '런치' | '질문' | '팁' | '잡담';
@@ -66,6 +69,7 @@ export interface CommunityPost {
 export interface LeaderboardUser {
   rank: number;
   name: string;
+  email?: string;
   avatar: string;
   feedbackCount: number;
   badge?: string;

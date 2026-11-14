@@ -78,13 +78,18 @@ export const Leaderboard: React.FC = () => {
 
   // Open Direct Message modal with this ranked builder
   const handleOpenDm = (rankedUser: LeaderboardUser) => {
-    const existingBuilder = builders.find((b) => b.id === rankedUser.builderId || b.name === rankedUser.name);
+    const existingBuilder = builders.find(
+      (b) =>
+        (rankedUser.builderId && b.id === rankedUser.builderId) ||
+        (rankedUser.email && b.email && b.email.toLowerCase() === rankedUser.email.toLowerCase())
+    );
     if (existingBuilder) {
       setActiveDmBuilder(existingBuilder);
     } else {
       const tempBuilder: Builder = {
-        id: 'user-' + rankedUser.name,
+        id: rankedUser.builderId || (rankedUser.email ? 'user-' + rankedUser.email : 'user-' + rankedUser.name),
         name: rankedUser.name,
+        email: rankedUser.email,
         avatar: rankedUser.avatar,
         role: rankedUser.role || '인디 메이커',
         bio: rankedUser.aiCommentary || 'demonst 리더보드 상위 메이커입니다.',
@@ -257,11 +262,16 @@ export const Leaderboard: React.FC = () => {
               ring: 'ring-border ring-1',
             };
 
-            const isMe = user.isLoggedIn && (maker.name === user.name || (user.email && maker.name === user.email));
+            const isMe =
+              user.isLoggedIn &&
+              Boolean(
+                (user.id && maker.builderId === user.id) ||
+                (user.email && maker.email && user.email.toLowerCase() === maker.email.toLowerCase())
+              );
 
           return (
             <div
-              key={maker.name}
+              key={maker.builderId || maker.email || `${maker.name}-${idx}`}
               className={`relative flex flex-col items-center justify-between p-5 rounded-card border ${podiumMeta.border} shadow-card text-center transition-all hover:shadow-card-hover`}
             >
               {/* Badge */}
@@ -349,12 +359,17 @@ export const Leaderboard: React.FC = () => {
 
         {/* Table Body */}
         <div className="divide-y divide-border">
-          {rankedUsers.map((maker) => {
-            const isMe = user.isLoggedIn && (maker.name === user.name || (user.email && maker.name === user.email));
+          {rankedUsers.map((maker, idx) => {
+            const isMe =
+              user.isLoggedIn &&
+              Boolean(
+                (user.id && maker.builderId === user.id) ||
+                (user.email && maker.email && user.email.toLowerCase() === maker.email.toLowerCase())
+              );
 
             return (
               <div
-                key={maker.name}
+                key={maker.builderId || maker.email || `${maker.name}-${idx}`}
                 className={`grid grid-cols-12 items-center px-5 py-4 text-sm transition-colors hover:bg-surface-2 ${
                   isMe ? 'bg-accent/5' : ''
                 }`}

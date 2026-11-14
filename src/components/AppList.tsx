@@ -183,7 +183,11 @@ export const AppList: React.FC = () => {
                     <span className="shrink-0 text-[10px] sm:text-[11px] text-fg-muted">
                       {product.category}
                     </span>
-                    {user.isLoggedIn && (product.author === user.name || product.authorId === user.id || (user.email && product.author === user.email)) && (
+                    {user.isLoggedIn && Boolean(
+                      (product.authorId && product.authorId === user.id) ||
+                      (product.authorEmail && user.email && product.authorEmail.toLowerCase() === user.email.toLowerCase()) ||
+                      (user.email && (product.authorId === user.email || product.author === user.email))
+                    ) && (
                       <span className="shrink-0 rounded-pill bg-accent/10 px-1.5 py-0.2 sm:px-2 sm:py-0.5 text-[9px] sm:text-[10px] font-bold text-accent border border-accent/20">
                         내 제품
                       </span>
