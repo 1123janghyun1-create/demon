@@ -241,6 +241,15 @@ export default async function handler(req, res) {
         }
       }
 
+      if (table === 'messages') {
+        let msgList = readData('messages', []);
+        if (action === 'insert') {
+          msgList.push(data);
+          writeData('messages', msgList);
+          return res.status(200).json({ success: true, data });
+        }
+      }
+
       return res.status(200).json({ success: true });
     }
 
