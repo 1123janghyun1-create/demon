@@ -126,8 +126,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
           </button>
         )}
 
-        {/* Google Translate Language Selector (Hidden on extra small screens, available in sidebar) */}
-        <div className="hidden sm:flex items-center">
+        {/* Google Translate Language Selector (Direct Search Multilingual Modal) */}
+        <div className="flex items-center">
           <GoogleTranslate />
         </div>
       </div>

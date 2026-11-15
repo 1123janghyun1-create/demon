@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../AppContext';
 import {
   Sparkles,
@@ -13,11 +13,34 @@ import {
   HelpCircle,
   ExternalLink,
   ShieldCheck,
-  Heart
+  Heart,
+  Hash,
+  Search,
+  Compass
 } from 'lucide-react';
+import { SEO_KEYWORD_CATEGORIES, ALL_SEO_KEYWORDS } from '../data/seoKeywords';
 
 export const About: React.FC = () => {
-  const { setCurrentTab, setIsLoginModalOpen, user } = useApp();
+  const { setCurrentTab, setIsLoginModalOpen, user, setSearchQuery } = useApp();
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [keywordFilter, setKeywordFilter] = useState<string>('');
+
+  const displayedKeywords = useMemo(() => {
+    let pool = ALL_SEO_KEYWORDS;
+    if (selectedCategory !== 'all') {
+      const cat = SEO_KEYWORD_CATEGORIES.find((c) => c.slug === selectedCategory);
+      if (cat) pool = cat.keywords;
+    }
+    if (!keywordFilter.trim()) return pool;
+    const q = keywordFilter.trim().toLowerCase();
+    return pool.filter((k) => k.toLowerCase().includes(q));
+  }, [selectedCategory, keywordFilter]);
+
+  const handleKeywordClick = (kw: string) => {
+    setSearchQuery(kw);
+    setCurrentTab('test');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleStartSubmit = () => {
     if (!user.isLoggedIn) {
@@ -349,6 +372,15 @@ export const About: React.FC = () => {
 
           <div className="p-4 rounded-xl border border-border bg-surface">
             <h4 className="text-xs sm:text-sm font-bold text-fg mb-1">
+              Q. 등록한 웹사이트를 최상단으로 끌어올리는(Bump) 방법과 주기는 어떻게 되나요?
+            </h4>
+            <p className="text-xs text-fg-secondary leading-relaxed">
+              demonst에 등록된 본인의 웹사이트는 <strong>3일(72시간)마다 1회 [상단 끌어올리기] 버튼</strong>을 눌러 피드 최상단으로 올릴 수 있습니다. 이를 통해 새로운 방문자와 테스터에게 지속적으로 노출할 수 있습니다.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl border border-border bg-surface">
+            <h4 className="text-xs sm:text-sm font-bold text-fg mb-1">
               Q. 해외 사용자나 글로벌 테스터도 이용할 수 있나요?
             </h4>
             <p className="text-xs text-fg-secondary leading-relaxed">
@@ -363,6 +395,105 @@ export const About: React.FC = () => {
             <p className="text-xs text-fg-secondary leading-relaxed">
               '테스트' 탭에서 다른 동료 빌더들의 신작을 먼저 테스트하고 정성스러운 리뷰를 남겨보세요. 적극적인 피드백 활동은 리더보드 점수를 높이고 동료들의 상호 리뷰로 이어집니다!
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* SEO Topic Directory (500 Topics & Search Index) */}
+      <section className="space-y-4 pt-4 border-t border-border">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Compass className="w-5 h-5 text-accent" />
+            <h2 className="text-lg sm:text-xl font-bold text-fg">
+              사이드 프로젝트 & 인디 메이커 인기 탐색 토픽
+            </h2>
+          </div>
+          <span className="text-xs text-fg-muted font-mono bg-surface-2 px-2.5 py-1 rounded-full border border-border inline-flex items-center gap-1.5 self-start sm:self-auto">
+            <Hash className="w-3.5 h-3.5 text-accent" />
+            <span>총 {ALL_SEO_KEYWORDS.length}개 키워드 색인</span>
+          </span>
+        </div>
+
+        <p className="text-xs text-fg-secondary leading-relaxed">
+          Google 검색 및 인디 메이커들이 가장 자주 찾는 500개 핵심 키워드 모음입니다. 관심 있는 토픽을 클릭하면 해당 분야의 실시간 프로젝트 및 테스터를 바로 탐색할 수 있습니다.
+        </p>
+
+        {/* Category Filters */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
+          <button
+            type="button"
+            onClick={() => setSelectedCategory('all')}
+            className={`px-3 py-1.5 rounded-full font-semibold transition-all shrink-0 cursor-pointer ${
+              selectedCategory === 'all'
+                ? 'bg-accent text-white shadow-xs'
+                : 'bg-surface border border-border text-fg-secondary hover:text-fg hover:border-accent/30'
+            }`}
+          >
+            전체 (500)
+          </button>
+          {SEO_KEYWORD_CATEGORIES.map((cat) => {
+            const isSelected = selectedCategory === cat.slug;
+            return (
+              <button
+                key={cat.slug}
+                type="button"
+                onClick={() => setSelectedCategory(cat.slug)}
+                className={`px-3 py-1.5 rounded-full font-semibold transition-all shrink-0 cursor-pointer ${
+                  isSelected
+                    ? 'bg-accent text-white shadow-xs'
+                    : 'bg-surface border border-border text-fg-secondary hover:text-fg hover:border-accent/30'
+                }`}
+              >
+                {cat.name}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Keyword Search Filter Input */}
+        <div className="relative">
+          <Search className="w-4 h-4 text-fg-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            value={keywordFilter}
+            onChange={(e) => setKeywordFilter(e.target.value)}
+            placeholder="500개 색인 키워드 중 검색 (예: MVP, SaaS, 인디메이커, AI)..."
+            className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-surface border border-border text-fg placeholder:text-fg-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
+          />
+          {keywordFilter && (
+            <button
+              type="button"
+              onClick={() => setKeywordFilter('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-fg-muted hover:text-fg"
+            >
+              초기화
+            </button>
+          )}
+        </div>
+
+        {/* Keywords Cloud */}
+        <div className="p-4 rounded-xl border border-border bg-surface/50 max-h-[380px] overflow-y-auto scrollbar-thin">
+          <div className="flex flex-wrap gap-1.5">
+            {displayedKeywords.map((kw) => (
+              <a
+                key={kw}
+                href={`/?q=${encodeURIComponent(kw)}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleKeywordClick(kw);
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-surface-2 hover:bg-accent/15 border border-border hover:border-accent/40 text-fg-secondary hover:text-accent font-medium transition-all group"
+                title={`'${kw}' 관련 사이드 프로젝트 및 메이커 검색`}
+              >
+                <span className="text-fg-muted group-hover:text-accent/70 text-[10px]">#</span>
+                <span>{kw}</span>
+              </a>
+            ))}
+            {displayedKeywords.length === 0 && (
+              <div className="w-full text-center py-6 text-xs text-fg-muted">
+                '{keywordFilter}' 키워드를 찾을 수 없습니다.
+              </div>
+            )}
           </div>
         </div>
       </section>

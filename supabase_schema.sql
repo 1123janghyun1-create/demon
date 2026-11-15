@@ -26,8 +26,12 @@ create table if not exists public.products (
   tags text[],
   social_links jsonb,
   additional_links jsonb,
+  bumped_at timestamp with time zone,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- 3일 주기 끌어올리기 (Bump to Top) 지원 컬럼
+alter table public.products add column if not exists bumped_at timestamp with time zone;
 
 -- 2. feedbacks 테이블 (앱 테스트 피드백)
 create table if not exists public.feedbacks (

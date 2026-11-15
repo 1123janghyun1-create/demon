@@ -10,6 +10,7 @@ import {
   fetchProductsFromDB,
   insertProductToDB,
   updateProductInDB,
+  bumpProductInDB,
   deleteProductFromDB,
   incrementProductViewsInDB,
   incrementProductUpvoteInDB,
@@ -24,6 +25,7 @@ import {
   fetchCommunityPostsFromDB,
   insertCommunityPostToDB,
   deleteCommunityPostFromDB,
+  updateCommunityPostLikesInDB,
   fetchDirectMessagesFromDB,
   sendDirectMessageToDB,
   markDirectMessagesAsReadInDB,
@@ -38,6 +40,7 @@ interface AppContextType {
   setSelectedProduct: (p: Product | null) => void;
   updateProduct: (updated: Product) => void;
   deleteProduct: (productId: string) => void;
+  bumpProduct: (productId: string) => Promise<boolean>;
   incrementProductViews: (productId: string) => void;
   toggleProductUpvote: (productId: string) => void;
   isProductUpvoted: (productId: string) => boolean;
@@ -59,6 +62,8 @@ interface AppContextType {
   addCommunityPost: (post: Omit<CommunityPost, 'id' | 'timeAgo' | 'likes' | 'comments'>) => void;
   deleteCommunityPost: (postId: string) => void;
   toggleLikePost: (postId: string) => void;
+  toggleCommunityPostUpvote: (postId: string) => void;
+  isCommunityPostUpvoted: (postId: string) => boolean;
   addProduct: (newApp: Omit<Product, 'id' | 'slug' | 'feedbackCount' | 'createdAt'>) => Product;
   leaderboard: LeaderboardUser[];
   builders: Builder[];
@@ -177,16 +182,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
-  // Builders State
+  // Builders State (Pre-populated with 6 real builders from Supabase + localStorage merge)
   const [builders, setBuilders] = useState<Builder[]>(() => {
+    const defaults = (initialBuilders as unknown as Builder[]) || [];
     try {
       const saved = localStorage.getItem('demon_builders');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const parsedIds = new Set(parsed.map((b: Builder) => b.id));
+          const missingDefaults = defaults.filter((b) => !parsedIds.has(b.id));
+          return [...parsed, ...missingDefaults];
+        }
       }
     } catch {}
-    return (initialBuilders as Builder[]) || [];
+    return defaults;
   });
   const [isRefreshingBuilders, setIsRefreshingBuilders] = useState(false);
 
@@ -373,13 +383,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, 3500);
   }, []);
 
-  // Googlebot & Deep-linking URL Sync (Hash & Query Params)
+  // Googlebot & Deep-linking URL Sync (Search Params & Hash)
   const handleSetCurrentTab = useCallback((tab: NavTab) => {
     setCurrentTab(tab);
     try {
-      if (window.location.hash !== `#${tab}`) {
-        window.history.replaceState(null, '', `#${tab}`);
+      const url = new URL(window.location.href);
+      if (tab === 'test') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', tab);
       }
+      url.hash = '';
+      window.history.replaceState(null, '', url.pathname + url.search);
     } catch {}
   }, []);
 
@@ -1217,21 +1232,74 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('🚀 커뮤니티에 새 글이 등록되었습니다!');
   };
 
-  const toggleLikePost = (postId: string) => {
-    setCommunityPosts((prev) =>
-      prev.map((p) => {
-        if (p.id === postId) {
-          const isLiked = p.userLiked;
-          return {
-            ...p,
-            likes: isLiked ? p.likes - 1 : p.likes + 1,
-            userLiked: !isLiked,
-          };
+  // Community Posts Upvote Tracking
+  const [upvotedCommunityPostIds, setUpvotedCommunityPostIds] = useState<string[]>(() => {
+    try {
+      const savedUser = localStorage.getItem('demon_user');
+      const uId = savedUser ? JSON.parse(savedUser)?.id : '';
+      const key = uId ? `demon_community_upvotes_${uId}` : 'demon_community_upvotes';
+      const saved = localStorage.getItem(key);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const isCommunityPostUpvoted = useCallback(
+    (postId: string) => upvotedCommunityPostIds.includes(postId),
+    [upvotedCommunityPostIds]
+  );
+
+  const toggleCommunityPostUpvote = useCallback(
+    (postId: string) => {
+      let uId = user.id || user.email;
+      if (!uId) {
+        let guestId = localStorage.getItem('demon_guest_id');
+        if (!guestId) {
+          guestId = 'guest_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+          localStorage.setItem('demon_guest_id', guestId);
         }
-        return p;
-      })
-    );
-  };
+        uId = guestId;
+      }
+
+      const key = `demon_community_upvotes_${uId}`;
+      const isUpvoted = upvotedCommunityPostIds.includes(postId);
+      const nextUpvoted = isUpvoted
+        ? upvotedCommunityPostIds.filter((id) => id !== postId)
+        : [...upvotedCommunityPostIds, postId];
+
+      setUpvotedCommunityPostIds(nextUpvoted);
+      try {
+        localStorage.setItem(key, JSON.stringify(nextUpvoted));
+      } catch {}
+
+      const delta = isUpvoted ? -1 : 1;
+
+      setCommunityPosts((prev) =>
+        prev.map((p) => {
+          if (p.id === postId) {
+            return {
+              ...p,
+              likes: Math.max(0, (p.likes || 0) + delta),
+              userLiked: !isUpvoted,
+            };
+          }
+          return p;
+        })
+      );
+
+      updateCommunityPostLikesInDB(postId, delta).catch(() => {});
+
+      if (isUpvoted) {
+        showToast('게시글 추천을 취소했습니다.');
+      } else {
+        showToast('🔥 게시글을 추천(업보트)했습니다!');
+      }
+    },
+    [upvotedCommunityPostIds, showToast, user]
+  );
+
+  const toggleLikePost = toggleCommunityPostUpvote;
 
   // Add Product (Local + Supabase DB!)
   const addProduct = (newApp: Omit<Product, 'id' | 'slug' | 'feedbackCount' | 'createdAt'>) => {
@@ -1292,6 +1360,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     updateProductInDB(updated).catch((err: any) => console.warn('Supabase updateProduct error:', err));
     pingSearchEngines().catch(() => {});
     showToast('✨ 제품 정보가 성공적으로 수정되었습니다!');
+  };
+
+  // Bump / Boost Product to Top (3-day cooldown per product)
+  const bumpProduct = async (productId: string): Promise<boolean> => {
+    const targetProduct = products.find((p) => p.id === productId);
+    if (!targetProduct) return false;
+
+    // Verify 3-day cooldown (3 days = 259,200,000 ms)
+    const COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000;
+    const lastBumpTime = new Date(targetProduct.bumpedAt || targetProduct.createdAtRaw || targetProduct.createdAt).getTime();
+    const diffMs = Date.now() - lastBumpTime;
+
+    if (!isNaN(lastBumpTime) && diffMs < COOLDOWN_MS) {
+      const remainingMs = COOLDOWN_MS - diffMs;
+      const remainingDays = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
+      const remainingHours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+      const remainingMins = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+      const timeStr = remainingDays > 0 ? `${remainingDays}일 ${remainingHours}시간` : `${remainingHours}시간 ${remainingMins}분`;
+      showToast(`⏳ 3일 주기로 끌어올릴 수 있습니다. (다음 가능까지 ${timeStr} 남음)`);
+      return false;
+    }
+
+    const nowIso = new Date().toISOString();
+    const updatedProduct: Product = {
+      ...targetProduct,
+      bumpedAt: nowIso,
+      createdAtRaw: nowIso,
+      createdAt: '방금 전',
+    };
+
+    setProducts((prev) => {
+      // Remove target and place at very top
+      const others = prev.filter((p) => p.id !== productId);
+      const next = [updatedProduct, ...others];
+      try {
+        localStorage.setItem('demon_products', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+
+    if (selectedProduct && selectedProduct.id === productId) {
+      setSelectedProduct(updatedProduct);
+    }
+
+    bumpProductInDB(productId).catch((err: any) => console.warn('Supabase bumpProduct error:', err));
+    showToast(`🚀 '${targetProduct.title}'이(가) 목록 최상단으로 끌어올려졌습니다! (다음 끌어올리기는 3일 후에 가능합니다)`);
+    return true;
   };
 
   // Delete Product (Local + Supabase DB)
@@ -1427,59 +1542,68 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch {}
   }, []);
 
-  // Toggle Product Upvote (with requireAuth & Per-User DB Tracking)
+  // Toggle Product Upvote (Instant & Reliable for both logged-in and guest users)
   const toggleProductUpvote = useCallback(
     (productId: string) => {
-      requireAuth(() => {
-        const uId = user.id || user.email || 'user';
-        const key = `demon_upvotes_${uId}`;
-        const isUpvoted = upvotedProductIds.includes(productId);
-        const nextUpvoted = isUpvoted
-          ? upvotedProductIds.filter((id) => id !== productId)
-          : [...upvotedProductIds, productId];
-
-        setUpvotedProductIds(nextUpvoted);
-        try {
-          localStorage.setItem(key, JSON.stringify(nextUpvoted));
-        } catch {}
-
-        const delta = isUpvoted ? -1 : 1;
-
-        setProducts((prev) => {
-          const next = prev.map((p) => {
-            if (p.id === productId || p.slug === productId) {
-              const currentUpvotes = p.upvotes || 0;
-              return { ...p, upvotes: Math.max(0, currentUpvotes + delta) };
-            }
-            return p;
-          });
-          try {
-            localStorage.setItem('demon_products', JSON.stringify(next));
-          } catch {}
-          return next;
-        });
-
-        setSelectedProduct((prev) => {
-          if (prev && (prev.id === productId || prev.slug === productId)) {
-            const currentUpvotes = prev.upvotes || 0;
-            return { ...prev, upvotes: Math.max(0, currentUpvotes + delta) };
-          }
-          return prev;
-        });
-
-        // Record persistent user-product association in DB (prevents multi-voting across logins)
-        recordProductUpvoteInDB(uId, productId, !isUpvoted).catch(() => {});
-
-        if (isUpvoted) {
-          decrementProductUpvoteInDB(productId).catch(() => {});
-          showToast('추천을 취소했습니다.');
-        } else {
-          incrementProductUpvoteInDB(productId).catch(() => {});
-          showToast('🔥 프로젝트를 추천(업보트)했습니다!');
+      let uId = user.id || user.email;
+      if (!uId) {
+        let guestId = localStorage.getItem('demon_guest_id');
+        if (!guestId) {
+          guestId = 'guest_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+          localStorage.setItem('demon_guest_id', guestId);
         }
-      }, '프로젝트를 추천(업보트)하려면 로그인이 필요합니다.');
+        uId = guestId;
+      }
+
+      const key = `demon_upvotes_${uId}`;
+      const isUpvoted = upvotedProductIds.includes(productId);
+      const nextUpvoted = isUpvoted
+        ? upvotedProductIds.filter((id) => id !== productId)
+        : [...upvotedProductIds, productId];
+
+      setUpvotedProductIds(nextUpvoted);
+      try {
+        localStorage.setItem(key, JSON.stringify(nextUpvoted));
+      } catch {}
+
+      const delta = isUpvoted ? -1 : 1;
+
+      setProducts((prev) => {
+        const next = prev.map((p) => {
+          if (p.id === productId || p.slug === productId) {
+            const currentUpvotes = p.upvotes || 0;
+            return { ...p, upvotes: Math.max(0, currentUpvotes + delta) };
+          }
+          return p;
+        });
+        try {
+          localStorage.setItem('demon_products', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      setSelectedProduct((prev) => {
+        if (prev && (prev.id === productId || prev.slug === productId)) {
+          const currentUpvotes = prev.upvotes || 0;
+          return { ...prev, upvotes: Math.max(0, currentUpvotes + delta) };
+        }
+        return prev;
+      });
+
+      // Record persistent user-product association in DB (if logged in)
+      if (user.isLoggedIn && (user.id || user.email)) {
+        recordProductUpvoteInDB(uId, productId, !isUpvoted).catch(() => {});
+      }
+
+      if (isUpvoted) {
+        decrementProductUpvoteInDB(productId).catch(() => {});
+        showToast('추천을 취소했습니다.');
+      } else {
+        incrementProductUpvoteInDB(productId).catch(() => {});
+        showToast('🔥 프로젝트를 추천(업보트)했습니다!');
+      }
     },
-    [upvotedProductIds, requireAuth, showToast, user]
+    [upvotedProductIds, showToast, user]
   );
 
   const nextQuote = () => {
@@ -1496,6 +1620,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedProduct,
         updateProduct,
         deleteProduct,
+        bumpProduct,
         incrementProductViews,
         toggleProductUpvote,
         isProductUpvoted,
@@ -1517,6 +1642,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addCommunityPost,
         deleteCommunityPost,
         toggleLikePost,
+        toggleCommunityPostUpvote,
+        isCommunityPostUpvoted,
         addProduct,
         leaderboard,
         builders,

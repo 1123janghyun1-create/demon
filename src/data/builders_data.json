@@ -1,1 +1,129 @@
-[]
+[
+  {
+    "id": "0f3ad274-e282-4a43-bc7e-9c123a3cc9be",
+    "name": "demonst",
+    "email": "demonst1004@gmail.com",
+    "role": "demonst 메이커",
+    "bio": "새로운 사이드 프로젝트를 코딩하는 메이커입니다.",
+    "avatar": "https://lh3.googleusercontent.com/a/ACg8ocJemdKovTQZ8nsEar4pKlyo-ysSlFeSfrjSFbjLM8ezbgUqEdk=s96-c",
+    "buildingApp": "demonst",
+    "tags": [
+      "개발자",
+      "SaaS",
+      "AI"
+    ],
+    "followersCount": 1,
+    "followingCount": 0,
+    "website": null,
+    "github": "https://github.com",
+    "twitter": null,
+    "online": true,
+    "isFollowing": false
+  },
+  {
+    "id": "b42f02d8-9177-481e-92b5-975b1b481c39",
+    "name": "New Era 404",
+    "email": "moaseongbz@gmail.com",
+    "role": "demonst 메이커",
+    "bio": "새로운 사이드 프로젝트를 코딩하는 메이커입니다.",
+    "avatar": "https://lh3.googleusercontent.com/a/ACg8ocK8Q8sCthWb-mQ4tHCmaZmI0IAZ_7DGJWvAHUYN0GelFKHDINI=s96-c",
+    "buildingApp": "demonst",
+    "tags": [
+      "개발자",
+      "SaaS",
+      "AI"
+    ],
+    "followersCount": 1,
+    "followingCount": 0,
+    "website": null,
+    "github": "https://github.com",
+    "twitter": null,
+    "online": true,
+    "isFollowing": false
+  },
+  {
+    "id": "0ad5aa4c-c1e4-4a27-b750-051369fa04ab",
+    "name": "장현",
+    "email": "1123janghyun2@gmail.com",
+    "role": "demonst 메이커",
+    "bio": "새로운 사이드 프로젝트를 코딩하는 메이커입니다.",
+    "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKIY-OfEnQ35IPnWavrvY7cg2tiOZ7uaurnvM-14uCHAvvXQQ=s96-c",
+    "buildingApp": "demonst",
+    "tags": [
+      "개발자",
+      "SaaS",
+      "AI"
+    ],
+    "followersCount": 2,
+    "followingCount": 0,
+    "website": null,
+    "github": "https://github.com",
+    "twitter": null,
+    "online": true,
+    "isFollowing": false
+  },
+  {
+    "id": "c9cfe311-84b4-45fd-ae02-acce6d28ff0a",
+    "name": "Hawon Min",
+    "email": "slughawon0313@gmail.com",
+    "role": "demonst 메이커",
+    "bio": "새로운 사이드 프로젝트를 코딩하는 메이커입니다.",
+    "avatar": "/demon-mascot.png",
+    "buildingApp": "demonst",
+    "tags": [
+      "개발자",
+      "SaaS",
+      "AI"
+    ],
+    "followersCount": 1,
+    "followingCount": 0,
+    "website": null,
+    "github": "https://github.com",
+    "twitter": null,
+    "online": true,
+    "isFollowing": false
+  },
+  {
+    "id": "a7891563-3766-443f-a51d-59607febed63",
+    "name": "장현",
+    "email": "1123janghyun1@gmail.com",
+    "role": "demonst 메이커",
+    "bio": "새로운 사이드 프로젝트를 코딩하는 메이커입니다.",
+    "avatar": "https://lh3.googleusercontent.com/a/ACg8ocLggCrPg9ZNm6406VyydoFZM4akABLU22lvRux6LDnVW-UoTq8=s96-c",
+    "buildingApp": "demonst",
+    "tags": [
+      "개발자",
+      "SaaS",
+      "AI"
+    ],
+    "followersCount": 1,
+    "followingCount": 0,
+    "website": null,
+    "github": "https://github.com",
+    "twitter": null,
+    "online": true,
+    "isFollowing": false
+  },
+  {
+    "id": "277b1372-2429-46a8-87ce-56749ca20257",
+    "name": "서민아 (PrevitLAB)",
+    "email": "previtlab@gmail.com",
+    "role": "demonst 메이커",
+    "bio": "demonst 사이드 프로젝트 메이커입니다.",
+    "avatar": "https://lh3.googleusercontent.com/a/ACg8ocJzl50FaYUjrS0mZrejeWLm-XicXO7TGJC16-xZoBiN48dLcJw=s96-c",
+    "buildingApp": "demonst",
+    "tags": [
+      "메이커",
+      "개발자",
+      "SaaS",
+      "AI"
+    ],
+    "followersCount": 3,
+    "followingCount": 0,
+    "website": null,
+    "github": "https://github.com",
+    "twitter": null,
+    "online": true,
+    "isFollowing": false
+  }
+]

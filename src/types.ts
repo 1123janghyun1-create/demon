@@ -14,6 +14,8 @@ export interface Product {
   authorId?: string;
   authorEmail?: string;
   createdAt: string;
+  createdAtRaw?: string;
+  bumpedAt?: string;
   isNew?: boolean;
   instructions: string;
   // Extended fields for rich product submission
@@ -109,15 +111,15 @@ export interface Builder {
   role: string;
   bio: string;
   avatar: string;
-  buildingApp?: string;
+  buildingApp?: string | null;
   tags: string[];
   followersCount: number;
   followingCount: number;
   isFollowing?: boolean;
   online?: boolean;
-  website?: string;
-  github?: string;
-  twitter?: string;
+  website?: string | null;
+  github?: string | null;
+  twitter?: string | null;
   joinedAt?: string;
 }
 

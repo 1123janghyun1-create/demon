@@ -80,16 +80,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
       >
         <div className="flex h-full flex-col overflow-y-auto p-4 justify-between">
           <div>
-            {/* Demon Brand Logo */}
+            {/* Demon Brand Logo (Googlebot Crawlable Anchor) */}
             <div className="mb-6 flex shrink-0 items-center px-1">
-              <button
-                onClick={() => handleNavClick('test')}
+              <a
+                href="/"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleNavClick('test');
+                }}
                 className="inline-flex items-center gap-2.5 text-left group focus-visible:outline-none"
+                title="demonst 홈으로 이동"
               >
                 <div className="relative flex items-center">
                   <img
                     src="/demon-mascot.png"
-                    alt="demon mascot"
+                    alt="demonst 공식 로고"
                     className="w-8 h-8 object-contain transition-transform duration-200 group-hover:scale-110"
                   />
                 </div>
@@ -106,17 +111,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
                     Maker Launchpad
                   </span>
                 </div>
-              </button>
+              </a>
             </div>
 
-            {/* Navigation links */}
+            {/* Navigation links (Googlebot Crawlable Anchor Elements) */}
             <nav className="flex flex-col gap-1" aria-label="주 메뉴">
               {navItems.map((item) => {
                 const isActive = currentTab === item.tab;
+                const href = item.tab === 'test' ? '/' : `/?tab=${item.tab}`;
                 return (
-                  <button
+                  <a
                     key={item.tab}
-                    onClick={() => handleNavClick(item.tab)}
+                    href={href}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleNavClick(item.tab);
+                    }}
                     className={`flex items-center gap-3 rounded-btn px-3 py-2.5 text-sm font-semibold transition-[color,background-color] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-left ${
                       isActive
                         ? 'bg-brand-subtle text-accent'
@@ -127,7 +137,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
                       {item.icon}
                     </span>
                     <span>{item.label}</span>
-                  </button>
+                  </a>
                 );
               })}
             </nav>

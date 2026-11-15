@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useApp } from '../AppContext';
+import { ALL_SEO_KEYWORDS, SEO_LONG_TAIL_FAQS } from '../data/seoKeywords';
 
 export const SeoStructuredData: React.FC = () => {
   const { products, builders, selectedProduct, currentTab } = useApp();
@@ -76,6 +77,7 @@ export const SeoStructuredData: React.FC = () => {
 
     // Apply Dynamic Meta Tags
     document.title = title;
+    setMetaTag('meta[name="keywords"]', 'content', ALL_SEO_KEYWORDS.join(', '));
     setMetaTag('meta[name="description"]', 'content', description);
     setMetaTag('meta[property="og:title"]', 'content', title);
     setMetaTag('meta[property="og:description"]', 'content', description);
@@ -100,6 +102,7 @@ export const SeoStructuredData: React.FC = () => {
         'alternateName': ['데몬스트', 'Demonst', 'demonst.vercel.app'],
         'description': '사이드 프로젝트와 인디 메이커를 위한 앱 테스트 & 런치패드 플랫폼',
         'inLanguage': 'ko-KR',
+        'keywords': ALL_SEO_KEYWORDS.slice(0, 100).join(', '),
         'potentialAction': {
           '@type': 'SearchAction',
           'target': 'https://demonst.vercel.app/?q={search_term_string}',
@@ -114,6 +117,7 @@ export const SeoStructuredData: React.FC = () => {
         'url': 'https://demonst.vercel.app/',
         'logo': 'https://demonst.vercel.app/demon-mascot.png',
         'email': 'demonst1004@gmail.com',
+        'keywords': ALL_SEO_KEYWORDS.slice(100, 200).join(', '),
         'sameAs': [
           'https://twitter.com',
           'https://github.com',
@@ -180,32 +184,14 @@ export const SeoStructuredData: React.FC = () => {
       {
         '@type': 'FAQPage',
         '@id': 'https://demonst.vercel.app/#faq',
-        'mainEntity': [
-          {
-            '@type': 'Question',
-            'name': 'demonst는 어떤 플랫폼인가요?',
-            'acceptedAnswer': {
-              '@type': 'Answer',
-              'text': 'demonst는 사이드 프로젝트와 인디 메이커를 위한 앱 테스트 & 10초 런치패드 플랫폼입니다. 누구나 무료로 웹앱을 등록하고 초기 테스터들로부터 진솔한 피드백을 수집할 수 있습니다.',
-            },
+        'mainEntity': SEO_LONG_TAIL_FAQS.map((faq) => ({
+          '@type': 'Question',
+          'name': faq.q,
+          'acceptedAnswer': {
+            '@type': 'Answer',
+            'text': faq.a,
           },
-          {
-            '@type': 'Question',
-            'name': '사이드 프로젝트 등록 비용은 얼마인가요?',
-            'acceptedAnswer': {
-              '@type': 'Answer',
-              'text': 'demonst에서 프로젝트 등록, AI 웹사이트 분석 및 뷰포트 캡처, 테스터 모집은 100% 무료로 평생 지원됩니다.',
-            },
-          },
-          {
-            '@type': 'Question',
-            'name': '테스터 피드백을 남기면 어떤 혜택이 있나요?',
-            'acceptedAnswer': {
-              '@type': 'Answer',
-              'text': '피드백을 작성하면 AI 리더보드에 기여도가 자동 반영되어 우수 테스터 명예의 전당에 등재되며, 제작자와의 1:1 실시간 DM 네트워킹을 나눌 수 있습니다.',
-            },
-          },
-        ],
+        })),
       },
       // 6. Registered Projects (SoftwareApplication ItemList with Rich AggregateRating)
       {

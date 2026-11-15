@@ -18,6 +18,8 @@ import {
   Plus,
   Eye,
   ChevronUp,
+  Rocket,
+  Clock,
 } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { Product } from '../types';
@@ -39,6 +41,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
     incrementProductViews,
     toggleProductUpvote,
     isProductUpvoted,
+    bumpProduct,
     user,
     requireAuth,
     setIsLoginModalOpen,
@@ -89,6 +92,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
       (product.authorEmail && user.email && product.authorEmail.toLowerCase() === user.email.toLowerCase()) ||
       (user.email && (product.authorId === user.email || product.author === user.email))
     );
+
+  // 3-Day Cooldown Constants (3 days = 259,200,000 ms)
+  const COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000;
+  const lastBumpTime = new Date(product.bumpedAt || product.createdAtRaw || product.createdAt || 0).getTime();
+  const diffMs = Date.now() - lastBumpTime;
+  const canBump = isAuthor && (isNaN(lastBumpTime) || diffMs >= COOLDOWN_MS);
+  const remainingMs = Math.max(0, COOLDOWN_MS - diffMs);
+  const remainingDays = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
+  const remainingHours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+  const remainingMins = Math.floor((remainingMs % (60 * 1000)) / (60 * 1000));
 
   // Edit Mode States
   const [isEditing, setIsEditing] = useState(false);
@@ -223,9 +236,34 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* Author Action Buttons (Edit / Delete) */}
+            {/* Author Action Buttons (Bump / Edit / Delete) */}
             {isAuthor && !isEditing && (
               <>
+                {canBump ? (
+                  <button
+                    type="button"
+                    onClick={() => bumpProduct(product.id)}
+                    className="inline-flex items-center gap-1.5 rounded-btn bg-gradient-to-r from-accent to-rose-500 hover:from-accent-hover hover:to-rose-600 px-3 py-1 text-xs font-bold text-white shadow-xs hover:shadow-md transition-all cursor-pointer animate-pulse"
+                    title="3일 주기 끌어올리기 가능! 클릭하면 내 앱이 목록 맨 위로 올라갑니다."
+                  >
+                    <Rocket className="w-3.5 h-3.5" />
+                    <span>상단 끌어올리기</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => bumpProduct(product.id)}
+                    className="inline-flex items-center gap-1.5 rounded-btn bg-surface-2 border border-border px-2.5 py-1 text-xs font-semibold text-fg-muted hover:border-accent/40 transition-colors cursor-pointer"
+                    title={`자신의 웹사이트는 3일마다 1회 최상단으로 끌어올릴 수 있습니다. (다음 가능: ${remainingDays > 0 ? `${remainingDays}일 ${remainingHours}시간 후` : `${remainingHours}시간 ${remainingMins}분 후`})`}
+                  >
+                    <Clock className="w-3.5 h-3.5 text-accent" />
+                    <span>
+                      {remainingDays > 0
+                        ? `끌어올리기 D-${remainingDays} (${remainingHours}h)`
+                        : `끌어올리기 ${remainingHours}h ${remainingMins}m`}
+                    </span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}

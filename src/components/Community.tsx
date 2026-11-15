@@ -1,10 +1,20 @@
 import React, { useState } from 'react';
-import { MessageSquare, Heart, Share2, Send, Tag, Sparkles, LogIn, Trash2 } from 'lucide-react';
+import { MessageSquare, Share2, Send, Tag, Sparkles, LogIn, Trash2, ChevronUp } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { CommunityPost } from '../types';
 
 export const Community: React.FC = () => {
-  const { communityPosts, addCommunityPost, deleteCommunityPost, toggleLikePost, showToast, user, requireAuth, setIsLoginModalOpen } = useApp();
+  const {
+    communityPosts,
+    addCommunityPost,
+    deleteCommunityPost,
+    toggleCommunityPostUpvote,
+    isCommunityPostUpvoted,
+    showToast,
+    user,
+    requireAuth,
+    setIsLoginModalOpen,
+  } = useApp();
 
   const [filter, setFilter] = useState<'latest' | 'popular'>('latest');
   const [title, setTitle] = useState('');
@@ -31,15 +41,9 @@ export const Community: React.FC = () => {
     }, '커뮤니티에 글을 게시하려면 로그인이 필요합니다.');
   };
 
-  const handleLike = (postId: string) => {
-    requireAuth(() => {
-      toggleLikePost(postId);
-    }, '좋아요를 누르려면 로그인이 필요합니다.');
-  };
-
   const sortedPosts = [...communityPosts].sort((a, b) => {
     if (filter === 'popular') {
-      return b.likes - a.likes;
+      return (b.likes || 0) - (a.likes || 0);
     }
     return 0;
   });
@@ -152,7 +156,7 @@ export const Community: React.FC = () => {
                 : 'text-fg-secondary hover:bg-surface-2'
             }`}
           >
-            최신
+            최신순
           </button>
           <button
             onClick={() => setFilter('popular')}
@@ -162,7 +166,7 @@ export const Community: React.FC = () => {
                 : 'text-fg-secondary hover:bg-surface-2'
             }`}
           >
-            인기
+            추천순 (인기)
           </button>
         </div>
         <span className="text-xs text-fg-muted">{communityPosts.length}개의 글</span>
@@ -252,20 +256,31 @@ export const Community: React.FC = () => {
             )}
 
             {/* Bottom Actions */}
-            <div className="flex items-center gap-4 pt-2 border-t border-border/60 text-xs text-fg-muted">
+            <div className="flex items-center gap-3 pt-2.5 border-t border-border/60 text-xs text-fg-muted">
+              {/* Upvote Button (Demonst Style ChevronUp Upvote) */}
               <button
-                onClick={() => handleLike(post.id)}
-                className={`inline-flex items-center gap-1.5 font-medium transition-colors ${
-                  post.userLiked ? 'text-rose-500 font-bold' : 'hover:text-fg'
+                type="button"
+                onClick={() => toggleCommunityPostUpvote(post.id)}
+                title={isCommunityPostUpvoted(post.id) ? '추천 취소' : '이 글 추천(업보트)'}
+                className={`group/vote inline-flex items-center gap-1.5 rounded-pill px-3 py-1 text-xs font-bold transition-all border shrink-0 cursor-pointer ${
+                  isCommunityPostUpvoted(post.id)
+                    ? 'bg-rose-500/10 border-rose-500/40 text-rose-600 dark:text-rose-400 shadow-2xs'
+                    : 'bg-surface-2 border-border text-fg-secondary hover:border-rose-500/40 hover:text-rose-500'
                 }`}
               >
-                <Heart className={`size-3.5 ${post.userLiked ? 'fill-rose-500' : ''}`} />
-                <span>{post.likes}</span>
+                <ChevronUp
+                  className={`w-3.5 h-3.5 transition-transform ${
+                    isCommunityPostUpvoted(post.id)
+                      ? 'text-rose-500 scale-125'
+                      : 'text-fg-muted group-hover/vote:text-rose-500 group-hover/vote:-translate-y-0.5'
+                  }`}
+                />
+                <span>추천 {post.likes || 0}</span>
               </button>
 
-              <div className="inline-flex items-center gap-1.5 font-medium">
-                <MessageSquare className="size-3.5" />
-                <span>{post.comments}</span>
+              <div className="inline-flex items-center gap-1.5 font-medium text-fg-muted">
+                <MessageSquare className="size-3.5 text-accent" />
+                <span>댓글 {post.comments || 0}</span>
               </div>
 
               <button

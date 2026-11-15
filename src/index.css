@@ -55,68 +55,33 @@ body {
   background: rgba(150, 150, 150, 0.4);
 }
 
-/* Google Translate Styling */
+/* Google Translate Engine Styling (Seamless Background Engine) */
 #google_translate_element {
-  display: inline-flex;
-  align-items: center;
+  display: none !important;
 }
 .goog-te-gadget {
-  font-family: inherit !important;
-  font-size: 11px !important;
-  color: var(--color-fg-muted) !important;
-  display: inline-flex !important;
-  align-items: center !important;
+  display: none !important;
 }
-.goog-te-gadget-simple {
-  background-color: var(--color-surface-2) !important;
-  border: 1px solid var(--color-border) !important;
-  padding: 4px 10px !important;
-  border-radius: 9999px !important;
-  font-size: 11px !important;
-  line-height: 1.2 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  cursor: pointer !important;
-  transition: all 0.15s ease !important;
-  color: var(--color-fg) !important;
-}
-.goog-te-gadget-simple:hover {
-  border-color: var(--color-accent) !important;
-  background-color: var(--color-surface-3) !important;
-}
-.goog-te-gadget-simple .goog-te-menu-value {
-  color: var(--color-fg) !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 3px !important;
-}
-.goog-te-gadget-simple .goog-te-menu-value span {
-  color: var(--color-fg) !important;
-  text-decoration: none !important;
-  border-left: none !important;
-  font-weight: 600 !important;
-  font-size: 11px !important;
-}
-.goog-te-gadget-icon {
-  margin-right: 4px !important;
+.goog-te-combo {
   display: none !important;
 }
 /* Prevent Google top banner frame from shifting layout */
 .goog-te-banner-frame.skiptranslate,
-.goog-te-banner-frame {
+.goog-te-banner-frame,
+.VIpgJd-ZVi9od-ORHb-OEVmcb {
   display: none !important;
 }
 body {
   top: 0px !important;
+  position: static !important;
 }
-.goog-tooltip, .goog-tooltip:hover {
+.goog-tooltip,
+.goog-tooltip:hover,
+#goog-gt-tt,
+.goog-te-balloon-frame {
   display: none !important;
 }
 .goog-text-highlight {
   background-color: transparent !important;
   box-shadow: none !important;
-}
-/* Menu popup dropdown styling */
-.goog-te-menu-frame {
-  z-index: 99999999 !important;
 }

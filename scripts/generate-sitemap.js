@@ -167,6 +167,29 @@ async function generate() {
 `;
   });
 
+  // 5. 고트래픽 주요 검색어 랜딩 페이지 (Google Search Console 500+ 검색어 유입 극대화)
+  const popularKeywords = [
+    '사이드프로젝트', '인디메이커', '앱테스트', '베타테스터', '유저피드백',
+    '서비스런칭', '1인개발자', 'SaaS', 'AI서비스', '무료앱홍보',
+    '프로덕트헌트', '디스콰이엇', '스타트업MVP', '아이디어검증', '생산성도구',
+    '마이크로SaaS', '웹앱배포', 'Nextjs', 'Supabase', 'React',
+    '초기유저모으기', '사이드프로젝트모임', '런칭패드', '앱리뷰', '사용성테스트',
+    '버그리포트', '1인창업', '부트스트래핑', '빌딩인퍼블릭', '개발자부업',
+    '웹사이트홍보', '오픈베타', '랜딩페이지', 'ChatGPT앱', 'LLM',
+    '토스페이먼츠', '개발자포트폴리오', 'PWA', '크로스플랫폼', 'demonst'
+  ];
+
+  popularKeywords.forEach((kw) => {
+    const kwUrl = `${siteBaseUrl}/?q=${encodeURIComponent(kw)}`;
+    xml += `  <url>
+    <loc>${escapeXml(kwUrl)}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+`;
+  });
+
   xml += `</urlset>
 `;
 

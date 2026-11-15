@@ -75,6 +75,8 @@ export async function fetchProductsFromDB(): Promise<Product[] | null> {
             demoVideo: row.demo_video || '',
             tags: Array.isArray(row.tags) ? row.tags : [],
             createdAt: createdDate,
+            createdAtRaw: row.created_at || new Date().toISOString(),
+            bumpedAt: row.bumped_at || row.created_at || undefined,
           };
         });
       } else if (error) {
@@ -177,6 +179,31 @@ export async function updateProductInDB(product: Product): Promise<boolean> {
     return true;
   } catch (err) {
     console.warn('updateProductInDB error:', err);
+    return true;
+  }
+}
+
+export async function bumpProductInDB(productId: string): Promise<boolean> {
+  const nowIso = new Date().toISOString();
+  syncApiPost('products', 'bump', { id: productId, bumpedAt: nowIso });
+
+  if (!supabase) return true;
+
+  try {
+    // Update created_at to current timestamp so Supabase .order('created_at', { ascending: false }) moves it to #1
+    const { error } = await supabase
+      .from('products')
+      .update({
+        created_at: nowIso,
+      })
+      .eq('id', productId);
+
+    if (error) {
+      console.warn('Supabase bumpProduct warning:', error.message);
+    }
+    return true;
+  } catch (err) {
+    console.warn('bumpProductInDB error:', err);
     return true;
   }
 }
@@ -570,6 +597,24 @@ export async function deleteCommunityPostFromDB(postId: string): Promise<boolean
     return !error;
   } catch {
     return true;
+  }
+}
+
+export async function updateCommunityPostLikesInDB(postId: string, delta: number): Promise<boolean> {
+  syncApiPost('community', delta > 0 ? 'increment_likes' : 'decrement_likes', { id: postId });
+
+  if (!supabase) return true;
+  try {
+    const { data } = await supabase.from('community_posts').select('likes').eq('id', postId).single();
+    if (data) {
+      const nextLikes = Math.max(0, (data.likes || 0) + delta);
+      await supabase.from('community_posts').update({ likes: nextLikes }).eq('id', postId);
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.warn('updateCommunityPostLikes warning:', err);
+    return false;
   }
 }
 

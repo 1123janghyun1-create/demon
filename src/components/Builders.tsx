@@ -175,6 +175,7 @@ export const Builders: React.FC = () => {
             return (
               <div
                 key={builder.id}
+                id={`builder-${builder.id}`}
                 className={`rounded-card border bg-surface p-5 shadow-card transition-all flex flex-col justify-between ${
                   isMe ? 'border-accent/40 ring-1 ring-accent/20' : 'border-border hover:border-border-strong hover:shadow-card-hover'
                 }`}
@@ -183,21 +184,31 @@ export const Builders: React.FC = () => {
                   {/* Header: Avatar, Name, Role, Online, Follow/Edit Button */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="relative shrink-0">
+                      <a
+                        href={`/?builder=${builder.id}`}
+                        className="relative shrink-0 block group"
+                        title={`${builder.name} 프로필`}
+                      >
                         <img
                           src={builder.avatar}
                           alt={`${builder.name} 빌더 프로필`}
                           loading="lazy"
-                          className="w-12 h-12 rounded-full object-cover ring-2 ring-border"
+                          className="w-12 h-12 rounded-full object-cover ring-2 ring-border group-hover:ring-accent transition-all"
                         />
                         {builder.online && (
                           <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-surface" title="온라인" />
                         )}
-                      </div>
+                      </a>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                           <h3 className="text-base font-bold text-fg tracking-tight truncate">
-                            {builder.name}
+                            <a
+                              href={`/?builder=${builder.id}`}
+                              className="hover:text-accent transition-colors"
+                              title={`${builder.name} 프로필 링크`}
+                            >
+                              {builder.name}
+                            </a>
                           </h3>
                           {isMe && (
                             <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-accent text-white font-bold">
