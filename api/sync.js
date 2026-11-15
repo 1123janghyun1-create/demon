@@ -184,6 +184,22 @@ export default async function handler(req, res) {
           writeData('products', list);
           return res.status(200).json({ success: true });
         }
+
+        if (action === 'bump') {
+          const nowIso = data.bumpedAt || new Date().toISOString();
+          list = list.map((p) =>
+            p.id === data.id
+              ? { ...p, bumpedAt: nowIso, createdAtRaw: nowIso, createdAt: '방금 전' }
+              : p
+          );
+          list.sort(
+            (a, b) =>
+              new Date(b.bumpedAt || b.createdAtRaw || b.createdAt || 0).getTime() -
+              new Date(a.bumpedAt || a.createdAtRaw || a.createdAt || 0).getTime()
+          );
+          writeData('products', list);
+          return res.status(200).json({ success: true, data: list });
+        }
       }
 
       if (table === 'builders') {
@@ -236,6 +252,16 @@ export default async function handler(req, res) {
         }
         if (action === 'delete') {
           list = list.filter((item) => item.id !== data.id);
+          writeData('community', list);
+          return res.status(200).json({ success: true, data: list });
+        }
+        if (action === 'increment_likes') {
+          list = list.map((item) => (item.id === data.id ? { ...item, likes: (item.likes || 0) + 1 } : item));
+          writeData('community', list);
+          return res.status(200).json({ success: true, data: list });
+        }
+        if (action === 'decrement_likes') {
+          list = list.map((item) => (item.id === data.id ? { ...item, likes: Math.max(0, (item.likes || 0) - 1) } : item));
           writeData('community', list);
           return res.status(200).json({ success: true, data: list });
         }

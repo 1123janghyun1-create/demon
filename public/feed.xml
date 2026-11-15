@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>demonst — 인디 메이커 앱 테스트 &amp; 런치패드</title>
+    <link>https://demonst.vercel.app/</link>
+    <description>사이드 프로젝트와 인디 메이커를 위한 앱 테스트 &amp; 런치패드 플랫폼. 실제 피드백을 모으고 함께 성장하세요.</description>
+    <language>ko-KR</language>
+    <lastBuildDate>Sun, 15 Nov 2026 07:49:17 GMT</lastBuildDate>
+    <atom:link href="https://demonst.vercel.app/feed.xml" rel="self" type="application/rss+xml" />
+    <image>
+      <url>https://demonst.vercel.app/demon-mascot.png</url>
+      <title>demonst</title>
+      <link>https://demonst.vercel.app/</link>
+    </image>
+    <item>
+      <title>우리집 모아성 — 집안일을 눈에 보이게 하는 방법</title>
+      <link>https://demonst.vercel.app/?product=app-1794472799159</link>
+      <guid isPermaLink="true">https://demonst.vercel.app/?product=app-1794472799159</guid>
+      <description>💡 서비스 핵심 개요
+우리집 모아성은(는) https://moaseong-web.pages.dev/ 도메인에서 누구나 바로 써볼 수 있는 집안일 관리 웹앱입니다.
+
+A : 집안일은 해도 티가 안 나요
+B : 매일매일.. 나만 하는 것 같아요..
+C : 뭘 해야할지 생각하는 것도 설명하는 것도 힘들어요
+
+집안일은 해도 티가 안 나고, 누가 얼마나 했는지도 남지 않아 금세 흐지부지됩니다. 
+모아성은 이 문제를 &apos;집 짓기&apos;로 풀었습니다. 
+우리가 해야할 일을 같이 선정하고, 한 일을 체크하면 
+건물에 방이 한 층 쌓이고, 같은 일을 반복하면 방 안에 가구가 하나씩 늘어납니다.
+혼자 살아도, 가족·동거인(메이트)과 함께 살아도 하나의 모아성에서 같이 쓸 수 있습니다.
+해낸 일이 눈에 보이는 건물로 남습니다. 
+
+✨ 사이트 분석 기반 주요 핵심 기능 &amp; 시스템
+집안일 쌓기:  8개 대분류 · 기본 할 일 454개. 집안일에 필요한 항목들은 미리 넣어놨어요. 체크하거나 검색하거나, 그래도 없는 할 일은 직접 추가할 수 있습니다.
+우리 집 상황별 추천 시작 패키지: 처음 접속하면 우리집 상황에 따라 오늘 시작할 5개 할 일을 추천받습니다. 454개 전체를 한꺼번에 마주하는 부담이 없습니다.
+닦기 · 꾸미기 · 쪽지달기: 가구를 반짝이게 닦아주거나 벽·바닥·가구 테마로 방을 꾸미고, 메이트에게 쪽지를 남겨 풍령(바람종)을 울릴 수 있습니다. 
+메이트 연결 &amp; 함께 쌓는 집: 초대 코드로 가족·동거인(메이트)와 연결하면 같은 모아성 화면을 공유해요. 완성한 모아성은 이미지로 저장·공유할 수 있습니다.
+주기 리포트 &amp; 업적 테마: 설정한 주기가 끝날 때마다 리포트가 도착하고, 숨겨진 업적 달성할 때마다 새로운 가구 테마가 하나씩 열립니다.
+
+🚀 실전 워크플로우 &amp; 주요 활용 시나리오
+1단계: 둘러보기로 입주: https://moaseong-web.pages.dev/에 접속해 우리 집 상황을 고르면 추천 할 일 5개와 함께 나만의 모아성이 만들어집니다.
+2단계: 하고 쌓고 꾸미기: 집안일을 하나 끝낼 때마다 체크하면 방이 한 층 올라가고, 반복하면 가구가 채워집니다. 
+3단계: 함께 쓰고 이어가기: 로그인하면 내 모아성이 사라지지않아요. (게스트로 쓰면 데이터가 날아갈수 있어요 ㅜㅜ)
+
+🎯 추천합니다!
+집안일이 쌓이기만 하고 성취감이 없어 번번이 포기하는 자취생·1인 가구
+가족·동거인과 집안일을 눈에 보이게 나누고, 서로 고마움을 쪽지로 전하고 싶은 2인 이상 가정
+반려동물·식물 돌봄, 육아, 부모님 돌봄처럼 챙길 일이 많아 &apos;오늘 할 일&apos;부터 정리하고 싶은 분
+아기자기하게 꾸미고 수집하는 걸 좋아하시는 분 (~귀여움이 세상을 구한다~)
+
+🛠️ UI/UX 및 기술적 인터랙션 특징
+집 단면도 메타포: 남색 외곽선의 2D 단면도 건물에 층과 가구가 쌓이는 방식이라, 진행 상황이 한눈에 보입니다.
+체험 먼저, 가입은 나중에: 가입 없이 게스트로 시작하고, 기록 저장·메이트 연결·테마 해금이 필요해질 때 로그인으로 자연스럽게 이어집니다.
+모바일 우선 웹앱: 설치 없이 브라우저에서 바로 열리고, 길게 누르기·끌어서 선택 같은 터치 제스처를 지원합니다. 서버(Supabase)에 저장되어 다른 기기에서도 내 집을 불러올 수 있고, 메이트와는 실시간으로 반영됩니다.
+
+🔍 베타 테스터를 위한 집중 피드백 요청 포인트
+[핵심 경험 검증] &apos;층 쌓기&apos;: 할 일을 체크할 때 방이 올라가고 가구가 늘어나는 재미가 반복해서 쓰고 싶을 만큼 느껴지는지
+[온보딩 검증] &apos;추천 시작 패키지&apos;: 상황 선택 후 추천된 5개 할 일이 우리 집에 실제로 맞는지, 처음 진입이 막힘없는지
+[메이트 연결]: 초대 코드로 연결하고 기록이 합쳐지는 과정이 이해하기 쉬운지, 쪽지·활동 알림이 부담 없는지
+[기기별 렌더링]: 모바일과 데스크톱(Chrome, Safari 등)에서 건물·가구 그림이 깨지거나 레이아웃이 어긋나지 않는지
+[개선 및 제안]: 있었으면 하는 할 일, 테마, 기능 아이디어</description>
+      <category>라이프스타일 / 건강</category>
+      <author>demonst1004@gmail.com (New Era 404)</author>
+      <pubDate>Sun, 15 Nov 2026 07:49:17 GMT</pubDate>
+    </item>
+    <item>
+      <title>SchoolEcho — 중학생 개발자 Hyun이 만든 전국 초·중·고교생을 위한 필수 학교 생활 도우미.</title>
+      <link>https://demonst.vercel.app/?product=app-1794447209771</link>
+      <guid isPermaLink="true">https://demonst.vercel.app/?product=app-1794447209771</guid>
+      <description>### 💡 서비스 핵심 개요
+**SchoolEcho**은(는) 중학생 개발자 Hyun이 만든 전국 초·중·고교생을 위한 필수 학교 생활 도우미. 실시간 급식 정보와 시간표 확인부터 우리 반만의 소중한 추억을 영구 보관하는 프라이빗 커뮤니티를 한곳에서 경험하세요.
+
+인터넷과 디지털 도구가 고도화됨에 따라 사용자가 직면하는 복잡한 절차와 정보 파편화 문제를 해결하고, 누구나 웹 브라우저에서 가장 직관적이고 매끄럽게 핵심 목적을 달성할 수 있도록 설계되었습니다. 메이커의 정밀한 개발 철학과 사용자 피드백을 기반으로 지속적인 개선을 이어가고 있습니다.
+
+### ✨ 사이트 분석 기반 주요 핵심 기능 &amp; 시스템
+1. **SchoolEcho**: 직관적인 인터페이스와 실시간 웹 기술을 바탕으로, 사용자가 필요로 하는 본질적인 가치와 결과를 군더더기 없이 신속하게 전달합니다.
+2. **Pages**: 직관적인 인터페이스와 실시간 웹 기술을 바탕으로, 사용자가 필요로 하는 본질적인 가치와 결과를 군더더기 없이 신속하게 전달합니다.
+3. **중학생 개발자 Hyun이 만든 전국 초**: 개발자가 겪는 반복적인 설정 번거로움을 최소화하고, 안정적인 API 인터페이스와 통합 환경을 바탕으로 생산성을 비약적으로 높입니다.
+
+### 🚀 실전 워크플로우 &amp; 주요 활용 시나리오
+- **1단계: 진입 및 온보딩**: 사용자는 schoolecho.base44.app에 접속하여 랜딩 페이지에서 제공하는 핵심 가치와 인터랙션을 즉시 확인하고 탐색을 시작합니다.
+- **2단계: 핵심 기능 실행 및 탐색**: 본인에게 필요한 정보를 조회하거나, 서비스를 통해 원하는 작업(데이터 확인, 커뮤니티 토론, 자동화 실행 등)을 원활하게 수행합니다.
+- **3단계: 가치 실현 및 피드백 순환**: 도출된 결과물과 인사이트를 실생활이나 업무, 투자 등에 바로 적용하고, 개선점이나 새로운 아이디어를 동료 유저들과 나눕니다.
+
+### 🎯 최적 타겟 고객군 &amp; 추천 대상
+- 불필요한 번거로움 없이 직관적이고 실용적인 웹 서비스를 통해 일상이나 업무의 생산성을 극대화하고 싶은 분
+- 군더더기 없는 심플한 인터페이스와 빠른 반응 속도를 중요하게 생각하는 사용자
+- 새로운 인디 프로젝트를 가장 먼저 경험하고 창작자와 적극적으로 피드백을 주고받는 테스터
+
+### 🛠️ UI/UX 및 기술적 인터랙션 특징
+- **모던 웹 아키텍처**: 가벼운 번들 크기와 빠른 초기 로딩 속도를 유지하여 어떤 환경에서도 쾌적하게 렌더링됩니다.
+- **심미적 시각 계층 구조**: 주요 버튼, 텍스트 배지, 카드 형태의 레이아웃이 유기적으로 배치되어 사용자의 시선 피로도를 낮춥니다.
+- **모바일 퍼스트 반응형**: 터치 기반 모바일 뷰에서도 손쉬운 제스처와 명확한 탭 인터랙션을 완벽 지원합니다.
+
+### 🔍 베타 테스터를 위한 집중 피드백 요청 포인트
+- **[핵심 기능 검증] &apos;SchoolEcho&apos;**: 실제 사용 시 기대했던 결과가 정확하고 매끄럽게 도출되는지
+- **[사용성 검증] &apos;Pages&apos;**: 해당 기능의 UI 배치와 조작 방식이 직관적이고 쉬운지
+- **[기기별 렌더링]**: 데스크톱(Chrome, Safari 등) 및 모바일 환경에서 폰트 깨짐이나 레이아웃 어긋남이 없는지
+- **[개선 및 제안]**: 실제 사용자 입장에서 보완되었으면 하는 추가 기능이나 UI 아이디어</description>
+      <category>교육 / 학습</category>
+      <author>demonst1004@gmail.com (장현)</author>
+      <pubDate>Sun, 15 Nov 2026 07:49:17 GMT</pubDate>
+    </item>
+    <item>
+      <title>demonst — 인디 메이커 앱 테스트 &amp; 런치패드</title>
+      <link>https://demonst.vercel.app/?product=app-1794438607026</link>
+      <guid isPermaLink="true">https://demonst.vercel.app/?product=app-1794438607026</guid>
+      <description>### 💡 서비스 핵심 개요
+**demonst**은(는) 사이드 프로젝트와 인디 메이커를 위한 앱 테스트 &amp; 런치패드 플랫폼. 실제 사용자 피드백을 모으고 함께 성장하세요.
+
+인터넷과 디지털 도구가 고도화됨에 따라 사용자가 직면하는 복잡한 절차와 정보 파편화 문제를 해결하고, 누구나 웹 브라우저에서 가장 직관적이고 매끄럽게 핵심 목적을 달성할 수 있도록 설계되었습니다. 메이커의 정밀한 개발 철학과 사용자 피드백을 기반으로 지속적인 개선을 이어가고 있습니다.
+
+### ✨ 사이트 분석 기반 주요 핵심 기능 &amp; 시스템
+1. **demonst 핵심 엔진 &amp; 직관적 접근성**: 별도의 프로그램 설치 없이 모바일 및 PC 브라우저에서 즉시 접속하여 모든 핵심 기능을 편리하게 이용할 수 있습니다.
+2. **실시간 인터랙티브 데이터 처리**: 사용자의 액션과 입력에 기민하게 반응하며 최신 데이터와 상태를 실시간으로 동기화합니다.
+3. **사용자 맞춤형 워크플로우**: 군더더기 없는 모던 UI 레이아웃을 통해 초보자부터 숙련된 유저까지 직관적인 조작이 가능합니다.
+4. **멀티 디바이스 반응형 최적화**: 스마트폰, 태블릿, 와이드 모니터 등 다양한 화면 해상도에서 완벽한 가독성과 심미성을 유지합니다.
+
+### 🚀 실전 워크플로우 &amp; 주요 활용 시나리오
+- **1단계: 진입 및 온보딩**: 사용자는 demonst.vercel.app에 접속하여 랜딩 페이지에서 제공하는 핵심 가치와 인터랙션을 즉시 확인하고 탐색을 시작합니다.
+- **2단계: 핵심 기능 실행 및 탐색**: 본인에게 필요한 정보를 조회하거나, 서비스를 통해 원하는 작업(데이터 확인, 커뮤니티 토론, 자동화 실행 등)을 원활하게 수행합니다.
+- **3단계: 가치 실현 및 피드백 순환**: 도출된 결과물과 인사이트를 실생활이나 업무, 투자 등에 바로 적용하고, 개선점이나 새로운 아이디어를 동료 유저들과 나눕니다.
+
+### 🎯 최적 타겟 고객군 &amp; 추천 대상
+- 불필요한 번거로움 없이 직관적이고 실용적인 웹 서비스를 통해 일상이나 업무의 생산성을 극대화하고 싶은 분
+- 군더더기 없는 심플한 인터페이스와 빠른 반응 속도를 중요하게 생각하는 사용자
+- 새로운 인디 프로젝트를 가장 먼저 경험하고 창작자와 적극적으로 피드백을 주고받는 테스터
+
+### 🛠️ UI/UX 및 기술적 인터랙션 특징
+- **모던 웹 아키텍처**: 가벼운 번들 크기와 빠른 초기 로딩 속도를 유지하여 어떤 환경에서도 쾌적하게 렌더링됩니다.
+- **심미적 시각 계층 구조**: 주요 버튼, 텍스트 배지, 카드 형태의 레이아웃이 유기적으로 배치되어 사용자의 시선 피로도를 낮춥니다.
+- **모바일 퍼스트 반응형**: 터치 기반 모바일 뷰에서도 손쉬운 제스처와 명확한 탭 인터랙션을 완벽 지원합니다.
+
+### 🔍 베타 테스터를 위한 집중 피드백 요청 포인트
+- **[첫인상 및 직관성]**: 사이트 진입 후 5초 이내에 서비스의 핵심 가치와 사용 방법이 명확하게 이해되는지
+- **[동작 완성도]**: 주요 버튼 클릭 및 데이터 조회 과정에서 버그나 로딩 지연 현상이 발생하지 않는지
+- **[기기별 렌더링]**: 데스크톱(Chrome, Safari 등) 및 모바일 환경에서 폰트 깨짐이나 레이아웃 어긋남이 없는지
+- **[개선 및 제안]**: 실제 사용자 입장에서 보완되었으면 하는 추가 기능이나 UI 아이디어</description>
+      <category>생산성</category>
+      <author>demonst1004@gmail.com (demonst)</author>
+      <pubDate>Sun, 15 Nov 2026 07:49:17 GMT</pubDate>
+    </item>
+    <item>
+      <title>빌더 프로필: demonst (demonst 메이커)</title>
+      <link>https://demonst.vercel.app/?builder=0f3ad274-e282-4a43-bc7e-9c123a3cc9be</link>
+      <guid isPermaLink="true">https://demonst.vercel.app/?builder=0f3ad274-e282-4a43-bc7e-9c123a3cc9be</guid>
+      <description>새로운 사이드 프로젝트를 코딩하는 메이커입니다.</description>
+      <category>빌더 / 메이커</category>
+      <author>demonst1004@gmail.com (demonst)</author>
+      <pubDate>Sun, 15 Nov 2026 07:49:17 GMT</pubDate>
+    </item>
+    <item>
+      <title>빌더 프로필: New Era 404 (demonst 메이커)</title>
+      <link>https://demonst.vercel.app/?builder=b42f02d8-9177-481e-92b5-975b1b481c39</link>
+      <guid isPermaLink="true">https://demonst.vercel.app/?builder=b42f02d8-9177-481e-92b5-975b1b481c39</guid>
+      <description>새로운 사이드 프로젝트를 코딩하는 메이커입니다.</description>
+      <category>빌더 / 메이커</category>
+      <author>demonst1004@gmail.com (New Era 404)</author>
+      <pubDate>Sun, 15 Nov 2026 07:49:17 GMT</pubDate>
+    </item>
+    <item>
+      <title>빌더 프로필: 장현 (demonst 메이커)</title>
+      <link>https://demonst.vercel.app/?builder=0ad5aa4c-c1e4-4a27-b750-051369fa04ab</link>
+      <guid isPermaLink="true">https://demonst.vercel.app/?builder=0ad5aa4c-c1e4-4a27-b750-051369fa04ab</guid>
+      <description>새로운 사이드 프로젝트를 코딩하는 메이커입니다.</description>
+      <category>빌더 / 메이커</category>
+      <author>demonst1004@gmail.com (장현)</author>
+      <pubDate>Sun, 15 Nov 2026 07:49:17 GMT</pubDate>
+    </item>
+    <item>
+      <title>빌더 프로필: Hawon Min (demonst 메이커)</title>
+      <link>https://demonst.vercel.app/?builder=c9cfe311-84b4-45fd-ae02-acce6d28ff0a</link>
+      <guid isPermaLink="true">https://demonst.vercel.app/?builder=c9cfe311-84b4-45fd-ae02-acce6d28ff0a</guid>
+      <description>새로운 사이드 프로젝트를 코딩하는 메이커입니다.</description>
+      <category>빌더 / 메이커</category>
+      <author>demonst1004@gmail.com (Hawon Min)</author>
+      <pubDate>Sun, 15 Nov 2026 07:49:17 GMT</pubDate>
+    </item>
+    <item>
+      <title>빌더 프로필: 장현 (demonst 메이커)</title>
+      <link>https://demonst.vercel.app/?builder=a7891563-3766-443f-a51d-59607febed63</link>
+      <guid isPermaLink="true">https://demonst.vercel.app/?builder=a7891563-3766-443f-a51d-59607febed63</guid>
+      <description>새로운 사이드 프로젝트를 코딩하는 메이커입니다.</description>
+      <category>빌더 / 메이커</category>
+      <author>demonst1004@gmail.com (장현)</author>
+      <pubDate>Sun, 15 Nov 2026 07:49:17 GMT</pubDate>
+    </item>
+    <item>
+      <title>빌더 프로필: 서민아 (PrevitLAB) (demonst 메이커)</title>
+      <link>https://demonst.vercel.app/?builder=277b1372-2429-46a8-87ce-56749ca20257</link>
+      <guid isPermaLink="true">https://demonst.vercel.app/?builder=277b1372-2429-46a8-87ce-56749ca20257</guid>
+      <description>demonst 사이드 프로젝트 메이커입니다.</description>
+      <category>빌더 / 메이커</category>
+      <author>demonst1004@gmail.com (서민아 (PrevitLAB))</author>
+      <pubDate>Sun, 15 Nov 2026 07:49:17 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

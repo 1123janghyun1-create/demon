@@ -4,7 +4,7 @@
   <!-- 1. demonst 메인 홈 -->
   <url>
     <loc>https://demonst.vercel.app/</loc>
-    <lastmod>2026-11-14</lastmod>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>always</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -17,58 +17,43 @@
   <!-- 2. 주요 탭 페이지 (Google Search Console 표준: '#' 대신 '?tab=' 쿼리 사용) -->
   <url>
     <loc>https://demonst.vercel.app/?tab=test</loc>
-    <lastmod>2026-11-14</lastmod>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://demonst.vercel.app/?tab=builders</loc>
-    <lastmod>2026-11-14</lastmod>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://demonst.vercel.app/?tab=leaderboard</loc>
-    <lastmod>2026-11-14</lastmod>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://demonst.vercel.app/?tab=community</loc>
-    <lastmod>2026-11-14</lastmod>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://demonst.vercel.app/?tab=submit</loc>
-    <lastmod>2026-11-14</lastmod>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://demonst.vercel.app/?tab=about</loc>
-    <lastmod>2026-11-14</lastmod>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://demonst.vercel.app/?product=app-1794438607026</loc>
-    <lastmod>2026-11-14</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://demonst.vercel.app/demon-mascot.png</image:loc>
-      <image:title>demonst 스크린샷</image:title>
-      <image:caption>인디 메이커 앱 테스트 &amp; 런치패드</image:caption>
-    </image:image>
-    <image:image>
-      <image:loc>http://demonst.vercel.app/favicon.ico</image:loc>
-      <image:title>demonst 로고</image:title>
-    </image:image>
-  </url>
-  <url>
     <loc>https://demonst.vercel.app/?product=app-1794447209771</loc>
-    <lastmod>2026-11-14</lastmod>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -83,7 +68,7 @@
   </url>
   <url>
     <loc>https://demonst.vercel.app/?product=app-1794472799159</loc>
-    <lastmod>2026-11-14</lastmod>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -97,8 +82,23 @@
     </image:image>
   </url>
   <url>
+    <loc>https://demonst.vercel.app/?product=app-1794438607026</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://demonst.vercel.app/demon-mascot.png</image:loc>
+      <image:title>demonst 스크린샷</image:title>
+      <image:caption>인디 메이커 앱 테스트 &amp; 런치패드</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>http://demonst.vercel.app/favicon.ico</image:loc>
+      <image:title>demonst 로고</image:title>
+    </image:image>
+  </url>
+  <url>
     <loc>https://demonst.vercel.app/?builder=277b1372-2429-46a8-87ce-56749ca20257</loc>
-    <lastmod>2026-11-14</lastmod>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -108,8 +108,19 @@
     </image:image>
   </url>
   <url>
+    <loc>https://demonst.vercel.app/?builder=0ad5aa4c-c1e4-4a27-b750-051369fa04ab</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocKIY-OfEnQ35IPnWavrvY7cg2tiOZ7uaurnvM-14uCHAvvXQQ=s96-c</image:loc>
+      <image:title>장현 빌더 프로필</image:title>
+      <image:caption>demonst 메이커</image:caption>
+    </image:image>
+  </url>
+  <url>
     <loc>https://demonst.vercel.app/?builder=0f3ad274-e282-4a43-bc7e-9c123a3cc9be</loc>
-    <lastmod>2026-11-14</lastmod>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -120,7 +131,7 @@
   </url>
   <url>
     <loc>https://demonst.vercel.app/?builder=b42f02d8-9177-481e-92b5-975b1b481c39</loc>
-    <lastmod>2026-11-14</lastmod>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -130,19 +141,19 @@
     </image:image>
   </url>
   <url>
-    <loc>https://demonst.vercel.app/?builder=0ad5aa4c-c1e4-4a27-b750-051369fa04ab</loc>
-    <lastmod>2026-11-14</lastmod>
+    <loc>https://demonst.vercel.app/?builder=c9cfe311-84b4-45fd-ae02-acce6d28ff0a</loc>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
-      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocKIY-OfEnQ35IPnWavrvY7cg2tiOZ7uaurnvM-14uCHAvvXQQ=s96-c</image:loc>
-      <image:title>장현 빌더 프로필</image:title>
+      <image:loc>https://demonst.vercel.app/demon-mascot.png</image:loc>
+      <image:title>Hawon Min 빌더 프로필</image:title>
       <image:caption>demonst 메이커</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://demonst.vercel.app/?builder=a7891563-3766-443f-a51d-59607febed63</loc>
-    <lastmod>2026-11-14</lastmod>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -152,14 +163,254 @@
     </image:image>
   </url>
   <url>
-    <loc>https://demonst.vercel.app/?builder=c9cfe311-84b4-45fd-ae02-acce6d28ff0a</loc>
-    <lastmod>2026-11-14</lastmod>
+    <loc>https://demonst.vercel.app/?builder=5baa0db7-208a-4890-8c74-5eb46874e83e</loc>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
-      <image:loc>https://demonst.vercel.app/demon-mascot.png</image:loc>
-      <image:title>Hawon Min 빌더 프로필</image:title>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocJid_qTs97_JwVShvegPA6qNattLexgeBGBuyOze-8dzhsLxv8=s96-c</image:loc>
+      <image:title>킴호박고구마 빌더 프로필</image:title>
       <image:caption>demonst 메이커</image:caption>
     </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EC%82%AC%EC%9D%B4%EB%93%9C%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EC%9D%B8%EB%94%94%EB%A9%94%EC%9D%B4%EC%BB%A4</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EC%95%B1%ED%85%8C%EC%8A%A4%ED%8A%B8</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EB%B2%A0%ED%83%80%ED%85%8C%EC%8A%A4%ED%84%B0</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EC%9C%A0%EC%A0%80%ED%94%BC%EB%93%9C%EB%B0%B1</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EC%84%9C%EB%B9%84%EC%8A%A4%EB%9F%B0%EC%B9%AD</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=1%EC%9D%B8%EA%B0%9C%EB%B0%9C%EC%9E%90</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=SaaS</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=AI%EC%84%9C%EB%B9%84%EC%8A%A4</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EB%AC%B4%EB%A3%8C%EC%95%B1%ED%99%8D%EB%B3%B4</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%ED%94%84%EB%A1%9C%EB%8D%95%ED%8A%B8%ED%97%8C%ED%8A%B8</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EB%94%94%EC%8A%A4%EC%BD%B0%EC%9D%B4%EC%97%87</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EC%8A%A4%ED%83%80%ED%8A%B8%EC%97%85MVP</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EC%95%84%EC%9D%B4%EB%94%94%EC%96%B4%EA%B2%80%EC%A6%9D</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EC%83%9D%EC%82%B0%EC%84%B1%EB%8F%84%EA%B5%AC</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EB%A7%88%EC%9D%B4%ED%81%AC%EB%A1%9CSaaS</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EC%9B%B9%EC%95%B1%EB%B0%B0%ED%8F%AC</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=Nextjs</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=Supabase</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=React</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EC%B4%88%EA%B8%B0%EC%9C%A0%EC%A0%80%EB%AA%A8%EC%9C%BC%EA%B8%B0</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EC%82%AC%EC%9D%B4%EB%93%9C%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8%EB%AA%A8%EC%9E%84</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EB%9F%B0%EC%B9%AD%ED%8C%A8%EB%93%9C</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EC%95%B1%EB%A6%AC%EB%B7%B0</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EC%82%AC%EC%9A%A9%EC%84%B1%ED%85%8C%EC%8A%A4%ED%8A%B8</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EB%B2%84%EA%B7%B8%EB%A6%AC%ED%8F%AC%ED%8A%B8</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=1%EC%9D%B8%EC%B0%BD%EC%97%85</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EB%B6%80%ED%8A%B8%EC%8A%A4%ED%8A%B8%EB%9E%98%ED%95%91</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EB%B9%8C%EB%94%A9%EC%9D%B8%ED%8D%BC%EB%B8%94%EB%A6%AD</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EA%B0%9C%EB%B0%9C%EC%9E%90%EB%B6%80%EC%97%85</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EC%9B%B9%EC%82%AC%EC%9D%B4%ED%8A%B8%ED%99%8D%EB%B3%B4</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EC%98%A4%ED%94%88%EB%B2%A0%ED%83%80</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EB%9E%9C%EB%94%A9%ED%8E%98%EC%9D%B4%EC%A7%80</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=ChatGPT%EC%95%B1</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=LLM</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%ED%86%A0%EC%8A%A4%ED%8E%98%EC%9D%B4%EB%A8%BC%EC%B8%A0</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%EA%B0%9C%EB%B0%9C%EC%9E%90%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=PWA</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=%ED%81%AC%EB%A1%9C%EC%8A%A4%ED%94%8C%EB%9E%AB%ED%8F%BC</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?q=demonst</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>
