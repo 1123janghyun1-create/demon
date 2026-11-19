@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageSquare, Share2, Send, Tag, Sparkles, LogIn, Trash2, ChevronUp } from 'lucide-react';
+import { MessageSquare, Share2, Send, Tag, Sparkles, LogIn, Trash2, ChevronUp, CornerDownRight } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { CommunityPost } from '../types';
 
@@ -10,6 +10,9 @@ export const Community: React.FC = () => {
     deleteCommunityPost,
     toggleCommunityPostUpvote,
     isCommunityPostUpvoted,
+    communityComments,
+    addCommunityComment,
+    deleteCommunityComment,
     showToast,
     user,
     requireAuth,
@@ -21,6 +24,10 @@ export const Community: React.FC = () => {
   const [content, setContent] = useState('');
   const [tag, setTag] = useState<'런치' | '질문' | '팁' | '잡담'>('런치');
   const [showEditor, setShowEditor] = useState(false);
+  const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
+  const [commentTextMap, setCommentTextMap] = useState<Record<string, string>>({});
+  const [replyTarget, setReplyTarget] = useState<{ postId: string; parentId: string; replyToAuthor: string } | null>(null);
+  const [replyText, setReplyText] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -278,12 +285,22 @@ export const Community: React.FC = () => {
                 <span>추천 {post.likes || 0}</span>
               </button>
 
-              <div className="inline-flex items-center gap-1.5 font-medium text-fg-muted">
+              <button
+                type="button"
+                onClick={() => setExpandedPostId(expandedPostId === post.id ? null : post.id)}
+                className={`inline-flex items-center gap-1.5 font-medium transition-colors cursor-pointer rounded-pill px-2.5 py-1 text-xs border ${
+                  expandedPostId === post.id
+                    ? 'border-accent/40 bg-accent/10 text-accent font-bold'
+                    : 'border-transparent text-fg-muted hover:text-fg hover:border-border'
+                }`}
+                title="댓글 보기 및 작성"
+              >
                 <MessageSquare className="size-3.5 text-accent" />
-                <span>댓글 {post.comments || 0}</span>
-              </div>
+                <span>댓글 {post.comments || (communityComments[post.id]?.length || 0)}</span>
+              </button>
 
               <button
+                type="button"
                 onClick={() => handleShare(post.title)}
                 className="ml-auto inline-flex items-center gap-1.5 font-medium hover:text-fg transition-colors"
               >
@@ -291,6 +308,199 @@ export const Community: React.FC = () => {
                 <span>공유</span>
               </button>
             </div>
+
+            {/* Expandable Comment & Reply Thread */}
+            {expandedPostId === post.id && (() => {
+              const allComments = communityComments[post.id] || [];
+              const topLevelComments = allComments.filter((c) => !c.parentId);
+              const getReplies = (parentId: string) => allComments.filter((c) => c.parentId === parentId);
+
+              return (
+                <div className="mt-3 pt-3 border-t border-border space-y-3">
+                  {/* Comments List */}
+                  <div className="space-y-2.5 max-h-80 overflow-y-auto scrollbar-thin pr-1">
+                    {topLevelComments.length === 0 ? (
+                      <p className="text-xs text-fg-muted py-2 text-center">
+                        아직 댓글이 없습니다. 첫 번째 댓글을 남겨보세요!
+                      </p>
+                    ) : (
+                      topLevelComments.map((c) => {
+                        const childReplies = getReplies(c.id);
+                        const isReplyingHere = replyTarget?.postId === post.id && replyTarget?.parentId === c.id;
+                        return (
+                          <div key={c.id} className="space-y-1.5">
+                            {/* Parent Comment */}
+                            <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-surface-2 text-xs">
+                              <img
+                                src={c.avatar || '/demon-mascot.png'}
+                                alt={c.author}
+                                className="w-5 h-5 rounded-full object-cover shrink-0 mt-0.5 border border-border"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-bold text-fg">{c.author}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[10px] text-fg-muted">{c.createdAt}</span>
+                                    {user.isLoggedIn && (user.id === c.authorId || (user.email && user.email === c.authorEmail)) && (
+                                      <button
+                                        type="button"
+                                        onClick={() => deleteCommunityComment(post.id, c.id)}
+                                        className="text-fg-muted hover:text-rose-500 cursor-pointer"
+                                        title="댓글 삭제"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                                <p className="mt-1 text-fg-secondary leading-relaxed break-words">{c.content}</p>
+                                <div className="mt-1.5 flex items-center gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (isReplyingHere) {
+                                        setReplyTarget(null);
+                                        setReplyText('');
+                                      } else {
+                                        setReplyTarget({ postId: post.id, parentId: c.id, replyToAuthor: c.author });
+                                        setReplyText('');
+                                      }
+                                    }}
+                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-fg-muted hover:text-accent transition-colors cursor-pointer"
+                                  >
+                                    <CornerDownRight className="w-3 h-3" />
+                                    <span>답글 달기{childReplies.length > 0 ? ` (${childReplies.length})` : ''}</span>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Nested Replies */}
+                            {childReplies.length > 0 && (
+                              <div className="ml-5 pl-3 border-l-2 border-accent/25 space-y-1.5">
+                                {childReplies.map((r) => (
+                                  <div key={r.id} className="flex items-start gap-2 p-2 rounded-lg bg-surface-2/60 border border-border/60 text-xs">
+                                    <CornerDownRight className="w-3 h-3 text-accent/70 shrink-0 mt-1" />
+                                    <img
+                                      src={r.avatar || '/demon-mascot.png'}
+                                      alt={r.author}
+                                      className="w-4 h-4 rounded-full object-cover shrink-0 mt-0.5 border border-border"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center justify-between">
+                                        <span className="font-bold text-fg text-[11px]">{r.author}</span>
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-[10px] text-fg-muted">{r.createdAt}</span>
+                                          {user.isLoggedIn && (user.id === r.authorId || (user.email && user.email === r.authorEmail)) && (
+                                            <button
+                                              type="button"
+                                              onClick={() => deleteCommunityComment(post.id, r.id)}
+                                              className="text-fg-muted hover:text-rose-500 cursor-pointer"
+                                              title="답글 삭제"
+                                            >
+                                              <Trash2 className="w-2.5 h-2.5" />
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <p className="mt-0.5 text-fg-secondary leading-relaxed break-words">
+                                        {r.replyToAuthor && (
+                                          <span className="text-accent font-semibold mr-1">@{r.replyToAuthor}</span>
+                                        )}
+                                        {r.content}
+                                      </p>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setReplyTarget({ postId: post.id, parentId: c.id, replyToAuthor: r.author });
+                                          setReplyText('');
+                                        }}
+                                        className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-fg-muted hover:text-accent transition-colors cursor-pointer"
+                                      >
+                                        <CornerDownRight className="w-2.5 h-2.5" />
+                                        <span>답글</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Inline Reply Input Form */}
+                            {isReplyingHere && (
+                              <form
+                                onSubmit={(e) => {
+                                  e.preventDefault();
+                                  const trimmed = replyText.trim();
+                                  if (!trimmed) return;
+                                  addCommunityComment(post.id, trimmed, c.id, replyTarget.replyToAuthor);
+                                  setReplyText('');
+                                  setReplyTarget(null);
+                                }}
+                                className="ml-5 pl-3 border-l-2 border-accent/50 flex items-center gap-1.5 pt-0.5"
+                              >
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  placeholder={`@${replyTarget.replyToAuthor}님에게 답글 남기기...`}
+                                  value={replyText}
+                                  onChange={(e) => setReplyText(e.target.value)}
+                                  className="flex-1 rounded-btn border border-accent/40 bg-surface-2 px-2.5 py-1.5 text-xs text-fg focus:border-accent focus:outline-none"
+                                />
+                                <button
+                                  type="submit"
+                                  disabled={!replyText.trim()}
+                                  className="rounded-btn bg-accent px-2.5 py-1.5 text-[11px] font-bold text-white hover:bg-accent-hover disabled:opacity-50 transition-colors shrink-0 cursor-pointer"
+                                >
+                                  답글 등록
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setReplyTarget(null);
+                                    setReplyText('');
+                                  }}
+                                  className="rounded-btn border border-border px-2 py-1.5 text-[11px] font-medium text-fg-muted hover:text-fg shrink-0 cursor-pointer"
+                                >
+                                  취소
+                                </button>
+                              </form>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Top-level Comment Form */}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const text = (commentTextMap[post.id] || '').trim();
+                      if (!text) return;
+                      addCommunityComment(post.id, text);
+                      setCommentTextMap((prev) => ({ ...prev, [post.id]: '' }));
+                    }}
+                    className="flex items-center gap-2 pt-1"
+                  >
+                    <input
+                      type="text"
+                      placeholder={user.isLoggedIn ? "따뜻한 댓글을 남겨보세요..." : "댓글을 입력하세요 (로그인 필요)..."}
+                      value={commentTextMap[post.id] || ''}
+                      onChange={(e) => setCommentTextMap((prev) => ({ ...prev, [post.id]: e.target.value }))}
+                      className="flex-1 rounded-btn border border-border bg-surface-2 px-3 py-1.5 text-xs text-fg focus:border-accent focus:outline-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!(commentTextMap[post.id] || '').trim()}
+                      className="rounded-btn bg-accent px-3 py-1.5 text-xs font-bold text-white hover:bg-accent-hover disabled:opacity-50 transition-colors shrink-0 cursor-pointer"
+                    >
+                      등록
+                    </button>
+                  </form>
+                </div>
+              );
+            })()}
           </div>
         ))
         )}

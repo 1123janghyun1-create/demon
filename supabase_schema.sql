@@ -320,6 +320,52 @@ begin
 end $$;
 
 -- ========================================================
+-- 7. feedback_replies & community_comments 테이블 (댓글 & 답글/대댓글 지원)
+-- ========================================================
+create table if not exists public.feedback_replies (
+  id text primary key,
+  feedback_id text not null,
+  product_id text not null,
+  author text not null,
+  author_id text,
+  author_email text,
+  avatar text,
+  content text not null,
+  is_maker boolean default false,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create table if not exists public.community_comments (
+  id text primary key,
+  post_id text not null,
+  parent_id text,
+  reply_to_author text,
+  author text not null,
+  author_id text,
+  author_email text,
+  avatar text,
+  content text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.feedback_replies enable row level security;
+alter table public.community_comments enable row level security;
+
+drop policy if exists "Allow public read feedback_replies" on public.feedback_replies;
+drop policy if exists "Allow public insert feedback_replies" on public.feedback_replies;
+drop policy if exists "Allow public delete feedback_replies" on public.feedback_replies;
+create policy "Allow public read feedback_replies" on public.feedback_replies for select using (true);
+create policy "Allow public insert feedback_replies" on public.feedback_replies for insert with check (true);
+create policy "Allow public delete feedback_replies" on public.feedback_replies for delete using (true);
+
+drop policy if exists "Allow public read community_comments" on public.community_comments;
+drop policy if exists "Allow public insert community_comments" on public.community_comments;
+drop policy if exists "Allow public delete community_comments" on public.community_comments;
+create policy "Allow public read community_comments" on public.community_comments for select using (true);
+create policy "Allow public insert community_comments" on public.community_comments for insert with check (true);
+create policy "Allow public delete community_comments" on public.community_comments for delete using (true);
+
+-- ========================================================
 -- 필수 권한 부여: anon 및 authenticated 역할에게 테이블 권한 부여
 -- 비로그인 사용자 및 신규 세션이 42501 (permission denied) 에러 없이 정상 조회할 수 있도록 필수 실행!
 -- ========================================================

@@ -173,11 +173,11 @@ export const SubmitApp: React.FC = () => {
           if (!fastForwardRef.current) {
             setCrawlLogs((prev) => [
               ...prev,
-              `[라우트 탐색] 타겟 도메인 전체 내부 경로(Routes) 트리 탐색 시작...`,
-              `[경로 식별] 하위 주요 라우트 식별 완료: ['/', '/about', '/features', '/explore', '/pricing']`,
+              `[멀티 페이지 탐색] 메인 DOM 렌더링 + 사이트맵 및 내부 하위 페이지 탐색 중...`,
+              `[외부 사이트 크롤링] 연결된 GitHub / 문서 / 블로그 및 외부 웹 레퍼런스 교차 수집 중...`,
             ]);
           }
-        }, 2500)
+        }, 2000)
       );
 
       timers.push(
@@ -185,57 +185,30 @@ export const SubmitApp: React.FC = () => {
           if (!fastForwardRef.current) {
             setCrawlLogs((prev) => [
               ...prev,
-              `[가상 브라우저] 헤드리스 Chromium 렌더링 엔진 기동 (Blink Engine, DPR 2.0)`,
-              `[데스크톱 캡처] 1280x800 풀스크린 고해상도 뷰포트 캡처 성공`,
-              `[모바일 캡처] 480x854 모바일 뷰포트 반응형 화면 캡처 완료`,
+              `[가상 브라우저] 헤드리스 렌더링으로 데스크톱(1280x800)·모바일(480x854)·서브페이지 화면 캡처 중...`,
+              `[심층 텍스트 분석] 페이지별 실제 기능·사용 흐름·요금제·기술 스택 추출 중...`,
             ]);
           }
-        }, 5500)
-      );
-
-      timers.push(
-        setTimeout(() => {
-          if (!fastForwardRef.current) {
-            setCrawlLogs((prev) => [
-              ...prev,
-              `[웹 크롤링] 메타태그, OpenGraph(og:image) 및 Twitter Card 자산 파싱`,
-              `[엔티티 정제] HTML 특수 문자(&#x27;, &quot;, &amp;) 디코딩 정제 완료`,
-              `[소셜 링크] Twitter/X, GitHub, Discord, YouTube 채널 자동 매핑`,
-            ]);
-          }
-        }, 8500)
-      );
-
-      timers.push(
-        setTimeout(() => {
-          if (!fastForwardRef.current) {
-            setCrawlLogs((prev) => [
-              ...prev,
-              `[AI 심층 분석] 서비스 핵심 가치 및 카테고리 식별`,
-              `[마크다운 작성] 5대 상세 섹션 (개요 / 핵심 기능 / 시나리오 / 타겟 / 테스터 가이드) 생성 중...`,
-            ]);
-          }
-        }, 11000)
+        }, 4500)
       );
 
       try {
         const meta: ExtractedMetadata = await metaPromise;
 
-        // Wait remaining time or fast-forward
-        const remaining = Math.max(0, targetDuration - (Date.now() - startTime));
-        if (!fastForwardRef.current && remaining > 0) {
-          await new Promise((resolve) => setTimeout(resolve, Math.min(remaining, 13000)));
-        }
-
         clearInterval(interval);
         timers.forEach(clearTimeout);
+
+        const visitedLogs = (meta.crawledPages || []).map(
+          (cp) => `[탐색 완료 · ${cp.type.toUpperCase()}] ${cp.title} (${cp.url})`
+        );
 
         setCrawlProgress(100);
         setCrawlStage(4);
         setCrawlLogs((prev) => [
           ...prev,
-          `[생성 완료] 총 ${(meta.description || '').length}자의 상세 마크다운 및 갤러리 ${(meta.gallery || []).length}장 준비 완료!`,
-          `[성공] 1단계 크롤링 완료. 정보 확인 및 편집 단계로 전환합니다.`,
+          ...visitedLogs,
+          `[생성 완료] 총 ${(meta.crawledPages || []).length || 1}개 페이지·외부 소스 분석 → ${(meta.description || '').length}자 상세 마크다운 및 갤러리 ${(meta.gallery || []).length}장 생성 완료!`,
+          `[성공] 정보 확인 및 편집 단계로 전환합니다.`,
         ]);
 
         // 1. 기본 정보 (모르는 내용은 빈칸)

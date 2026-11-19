@@ -2,14 +2,63 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        }
+      ]
+    },
+    {
+      "source": "/(.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico))",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "index, follow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/sitemap.xml",
       "destination": "/api/sitemap"
     },
     {
+      "source": "/image-sitemap.xml",
+      "destination": "/api/image-sitemap"
+    },
+    {
+      "source": "/feed.xml",
+      "destination": "/api/feed"
+    },
+    {
+      "source": "/((?!api/|assets/|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|css|js|json|xml|txt|woff2?|ttf|map)$).*)",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(googlebot|google-inspectiontool|adsbot-google|mediapartners-google|bingbot|yeti|naverbot|daumoa|twitterbot|facebookexternalhit|kakaotalk-scrap|slackbot|discordbot|linkedinbot|applebot|duckduckbot|yandexbot|baiduspider|gptbot|perplexitybot).*"
+        }
+      ],
+      "destination": "/api/seo-render"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/ping",
+      "schedule": "0 0 * * *"
     }
   ]
 }

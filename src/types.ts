@@ -34,6 +34,19 @@ export interface Product {
   tags?: string[];
 }
 
+export interface FeedbackReply {
+  id: string;
+  feedbackId: string;
+  productId: string;
+  author: string;
+  authorId?: string;
+  authorEmail?: string;
+  avatar: string;
+  content: string;
+  createdAt: string;
+  isMaker?: boolean;
+}
+
 export interface Feedback {
   id: string;
   productId: string;
@@ -46,6 +59,7 @@ export interface Feedback {
   deviceInfo: string;
   createdAt: string;
   screenshot?: string;
+  replies?: FeedbackReply[];
 }
 
 export interface CommunityPost {
@@ -66,6 +80,19 @@ export interface CommunityPost {
   likes: number;
   comments: number;
   userLiked?: boolean;
+}
+
+export interface CommunityComment {
+  id: string;
+  postId: string;
+  parentId?: string;
+  replyToAuthor?: string;
+  author: string;
+  authorId?: string;
+  authorEmail?: string;
+  avatar: string;
+  content: string;
+  createdAt: string;
 }
 
 export interface LeaderboardUser {

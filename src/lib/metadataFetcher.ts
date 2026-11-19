@@ -18,6 +18,7 @@ export interface ExtractedMetadata {
   category: string;
   tags: string[];
   instructions: string;
+  crawledPages?: Array<{ url: string; title: string; type: string }>;
 }
 
 function decodeHtmlEntities(str: string): string {
@@ -252,6 +253,7 @@ export async function fetchWebsiteMetadata(targetUrl: string): Promise<Extracted
           category: data.category || '',
           tags: Array.isArray(data.tags) ? data.tags : [],
           instructions: data.instructions || data.description || '',
+          crawledPages: Array.isArray(data.crawledPages) ? data.crawledPages : [],
         };
       }
     }

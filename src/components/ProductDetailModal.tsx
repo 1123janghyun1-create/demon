@@ -20,6 +20,7 @@ import {
   ChevronUp,
   Rocket,
   Clock,
+  CornerDownRight,
 } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { Product } from '../types';
@@ -38,6 +39,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
     updateProduct,
     deleteProduct,
     deleteFeedback,
+    feedbackReplies,
+    addFeedbackReply,
+    deleteFeedbackReply,
     incrementProductViews,
     toggleProductUpvote,
     isProductUpvoted,
@@ -50,6 +54,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
     openDmWithBuilder,
   } = useApp();
   const productFeedbacks = feedbacks[product.id] || feedbacks[product.slug] || [];
+  const [replyingFeedbackId, setReplyingFeedbackId] = useState<string | null>(null);
+  const [replyContentMap, setReplyContentMap] = useState<Record<string, string>>({});
 
   // 1:1 Direct Message with product maker
   const handleAuthorDm = () => {
@@ -197,7 +203,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
 
     requireAuth(() => {
       setIsSubmitting(true);
-      setTimeout(() => {
+      try {
         addFeedback(product.id, {
           productId: product.id,
           author: user.name || '데몬테스터',
@@ -211,8 +217,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
         setContent('');
         setFeedbackScreenshot('');
         setIsSubmitting(false);
-      }, 400);
-    }, '피드백을 작성하려면 로그인이 필요합니다.');
+        showToast('🎉 소중한 피드백(댓글)이 성공적으로 등록되었습니다!');
+      } catch (err) {
+        setIsSubmitting(false);
+        showToast('피드백 등록 중 오류가 발생했습니다.');
+      }
+    }, '댓글 및 피드백을 작성하려면 로그인이 필요합니다.');
   };
 
   return (
@@ -759,79 +769,78 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                 테스터님의 피드백은 메이커가 서비스를 개선하는 데 가장 큰 힘이 됩니다.
               </p>
 
-              {!user.isLoggedIn ? (
-                <div className="mt-4 rounded-btn border border-dashed border-border p-6 text-center">
-                  <p className="text-xs text-fg-muted mb-3">
-                    피드백을 작성하려면 먼저 로그인이 필요합니다.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setIsLoginModalOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-btn bg-accent px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-accent-hover"
-                  >
-                    <LogIn className="w-3.5 h-3.5" />
-                    <span>로그인하고 피드백 남기기</span>
-                  </button>
+              <form onSubmit={handleSubmitFeedback} className="mt-4 flex flex-col gap-3.5">
+                <div className="flex items-center gap-4 text-xs font-medium text-fg-muted">
+                  <span>테스트 환경:</span>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="device"
+                      value="Windows Chrome"
+                      checked={deviceInfo === 'Windows Chrome'}
+                      onChange={(e) => setDeviceInfo(e.target.value)}
+                      className="text-accent"
+                    />
+                    <span>PC 브라우저</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="device"
+                      value="Mobile Safari"
+                      checked={deviceInfo === 'Mobile Safari'}
+                      onChange={(e) => setDeviceInfo(e.target.value)}
+                      className="text-accent"
+                    />
+                    <span>모바일</span>
+                  </label>
                 </div>
-              ) : (
-                <form onSubmit={handleSubmitFeedback} className="mt-4 flex flex-col gap-3.5">
-                  <div className="flex items-center gap-4 text-xs font-medium text-fg-muted">
-                    <span>테스트 환경:</span>
-                    <label className="flex items-center gap-1.5 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="device"
-                        value="Windows Chrome"
-                        checked={deviceInfo === 'Windows Chrome'}
-                        onChange={(e) => setDeviceInfo(e.target.value)}
-                        className="text-accent"
-                      />
-                      <span>PC 브라우저</span>
-                    </label>
-                    <label className="flex items-center gap-1.5 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="device"
-                        value="Mobile Safari"
-                        checked={deviceInfo === 'Mobile Safari'}
-                        onChange={(e) => setDeviceInfo(e.target.value)}
-                        className="text-accent"
-                      />
-                      <span>모바일</span>
-                    </label>
-                  </div>
 
+                <div className="relative">
                   <textarea
                     required
                     rows={3}
-                    placeholder="서비스를 직접 둘러보신 후 버그, 사용성, 개선 아이디어를 솔직하게 남겨주세요."
+                    placeholder={
+                      user.isLoggedIn
+                        ? "서비스를 직접 둘러보신 후 버그, 사용성, 개선 아이디어 등 솔직한 댓글과 피드백을 남겨주세요."
+                        : "서비스를 직접 둘러보신 후 의견을 남겨주세요 (작성 후 제출 시 간편 로그인이 진행됩니다)."
+                    }
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     className="w-full rounded-btn border border-border bg-surface-2 p-3 text-xs text-fg focus:border-accent focus:outline-none leading-relaxed"
                   />
+                </div>
 
-                  {/* Feedback Screenshot Upload via Cloudinary */}
-                  <div>
-                    <ImageUploader
-                      label="버그 또는 화면 캡처 첨부 (선택)"
-                      value={feedbackScreenshot}
-                      onChange={(u) => setFeedbackScreenshot(u)}
-                      aspectRatio="video"
-                    />
-                  </div>
+                {/* Feedback Screenshot Upload via Cloudinary */}
+                <div>
+                  <ImageUploader
+                    label="버그 또는 화면 캡처 첨부 (선택)"
+                    value={feedbackScreenshot}
+                    onChange={(u) => setFeedbackScreenshot(u)}
+                    aspectRatio="video"
+                  />
+                </div>
 
-                  <div className="flex justify-end pt-1">
-                    <button
-                      type="submit"
-                      disabled={isSubmitting || !content.trim()}
-                      className="inline-flex items-center gap-1.5 rounded-btn bg-accent px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
-                    >
-                      <Send className="h-3.5 w-3.5" />
-                      <span>{isSubmitting ? '전송 중...' : '피드백 제출하기'}</span>
-                    </button>
-                  </div>
-                </form>
-              )}
+                <div className="flex items-center justify-between pt-1">
+                  {!user.isLoggedIn ? (
+                    <span className="text-[11px] text-fg-muted">
+                      💡 제출 시 Google 로그인이 필요합니다.
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-fg-muted">
+                      작성자: <b className="text-fg">{user.name}</b>
+                    </span>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || !content.trim()}
+                    className="inline-flex items-center gap-1.5 rounded-btn bg-accent px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                    <span>{isSubmitting ? '전송 중...' : '피드백/댓글 등록하기'}</span>
+                  </button>
+                </div>
+              </form>
             </div>
 
             {/* Past Feedbacks */}
@@ -908,6 +917,118 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                           />
                         </div>
                       )}
+
+                      {/* Reply Action Button */}
+                      {(() => {
+                        const replies = feedbackReplies[fb.id] || [];
+                        const isReplying = replyingFeedbackId === fb.id;
+                        return (
+                          <div className="pl-8 pt-1 space-y-2">
+                            <div className="flex items-center gap-3">
+                              <button
+                                type="button"
+                                onClick={() => setReplyingFeedbackId(isReplying ? null : fb.id)}
+                                className={`inline-flex items-center gap-1 text-[11px] font-semibold transition-colors cursor-pointer ${
+                                  isReplying ? 'text-accent' : 'text-fg-muted hover:text-accent'
+                                }`}
+                              >
+                                <CornerDownRight className="w-3 h-3" />
+                                <span>답글 달기{replies.length > 0 ? ` (${replies.length})` : ''}</span>
+                              </button>
+                            </div>
+
+                            {/* Existing Nested Replies */}
+                            {replies.length > 0 && (
+                              <div className="pl-3 border-l-2 border-accent/25 space-y-2 mt-1.5">
+                                {replies.map((reply) => (
+                                  <div
+                                    key={reply.id}
+                                    className="rounded-lg bg-surface border border-border/70 p-2.5 flex flex-col gap-1"
+                                  >
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <CornerDownRight className="w-3 h-3 text-accent/70 shrink-0" />
+                                        <img
+                                          src={reply.avatar || '/demon-mascot.png'}
+                                          alt={reply.author}
+                                          className="w-4 h-4 rounded-full object-cover shrink-0 border border-border"
+                                        />
+                                        <span className="text-[11px] font-bold text-fg truncate">{reply.author}</span>
+                                        {reply.isMaker && (
+                                          <span className="rounded-pill bg-accent/15 text-accent px-1.5 py-0.2 text-[9px] font-bold shrink-0">
+                                            메이커
+                                          </span>
+                                        )}
+                                        <span className="text-[10px] text-fg-muted shrink-0">· {reply.createdAt}</span>
+                                      </div>
+                                      {user.isLoggedIn && (
+                                        (reply.authorId && reply.authorId === user.id) ||
+                                        (reply.authorEmail && user.email && reply.authorEmail.toLowerCase() === user.email.toLowerCase())
+                                      ) && (
+                                        <button
+                                          type="button"
+                                          onClick={() => deleteFeedbackReply(fb.id, reply.id)}
+                                          className="text-fg-muted hover:text-rose-500 p-0.5 cursor-pointer"
+                                          title="답글 삭제"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </button>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-fg-secondary leading-relaxed pl-5 break-words">
+                                      {reply.content}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Inline Reply Input Form */}
+                            {isReplying && (
+                              <form
+                                onSubmit={(e) => {
+                                  e.preventDefault();
+                                  const txt = (replyContentMap[fb.id] || '').trim();
+                                  if (!txt) return;
+                                  addFeedbackReply(product.id, fb.id, txt);
+                                  setReplyContentMap((prev) => ({ ...prev, [fb.id]: '' }));
+                                  setReplyingFeedbackId(null);
+                                }}
+                                className="flex items-center gap-1.5 pt-1"
+                              >
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  placeholder={
+                                    user.isLoggedIn
+                                      ? `${fb.author}님에게 답글을 남겨보세요...`
+                                      : `${fb.author}님에게 답글 작성 (제출 시 로그인 필요)...`
+                                  }
+                                  value={replyContentMap[fb.id] || ''}
+                                  onChange={(e) =>
+                                    setReplyContentMap((prev) => ({ ...prev, [fb.id]: e.target.value }))
+                                  }
+                                  className="flex-1 rounded-btn border border-accent/40 bg-surface px-2.5 py-1.5 text-xs text-fg focus:border-accent focus:outline-none"
+                                />
+                                <button
+                                  type="submit"
+                                  disabled={!(replyContentMap[fb.id] || '').trim()}
+                                  className="rounded-btn bg-accent px-3 py-1.5 text-[11px] font-bold text-white hover:bg-accent-hover disabled:opacity-50 transition-colors shrink-0 cursor-pointer"
+                                >
+                                  답글 등록
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setReplyingFeedbackId(null)}
+                                  className="rounded-btn border border-border px-2 py-1.5 text-[11px] font-medium text-fg-muted hover:text-fg shrink-0 cursor-pointer"
+                                >
+                                  취소
+                                </button>
+                              </form>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   ))}
                 </div>

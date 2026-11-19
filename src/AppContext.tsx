@@ -1,10 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import initialProducts from './data/products.json';
 import initialBuilders from './data/builders_data.json';
 import initialFeedbacks from './data/feedbacks_data.json';
 import initialCommunity from './data/community_data.json';
 import initialQuotes from './data/quotes_data.json';
-import { Product, Feedback, CommunityPost, LeaderboardUser, Quote, NavTab, FilterSort, UserProfile, Builder, DirectMessage, AppNotification } from './types';
+import { Product, Feedback, FeedbackReply, CommunityPost, CommunityComment, LeaderboardUser, Quote, NavTab, FilterSort, UserProfile, Builder, DirectMessage, AppNotification } from './types';
 import { supabase, isSupabaseConfigured, signOutUser } from './lib/supabase';
 import {
   fetchProductsFromDB,
@@ -17,6 +17,7 @@ import {
   decrementProductUpvoteInDB,
   fetchUserUpvotesFromDB,
   recordProductUpvoteInDB,
+  toggleProductUpvoteAtomicInDB,
   fetchFeedbacksFromDB,
   insertFeedbackToDB,
   deleteFeedbackFromDB,
@@ -47,6 +48,9 @@ interface AppContextType {
   feedbacks: Record<string, Feedback[]>;
   addFeedback: (productId: string, feedback: Omit<Feedback, 'id' | 'createdAt'>) => void;
   deleteFeedback: (productId: string, feedbackId: string) => void;
+  feedbackReplies: Record<string, FeedbackReply[]>;
+  addFeedbackReply: (productId: string, feedbackId: string, content: string) => void;
+  deleteFeedbackReply: (feedbackId: string, replyId: string) => void;
   user: UserProfile;
   loginAsDemoUser: () => void;
   loginWithCustomEmail: (customUser: UserProfile) => void;
@@ -64,6 +68,9 @@ interface AppContextType {
   toggleLikePost: (postId: string) => void;
   toggleCommunityPostUpvote: (postId: string) => void;
   isCommunityPostUpvoted: (postId: string) => boolean;
+  communityComments: Record<string, CommunityComment[]>;
+  addCommunityComment: (postId: string, content: string, parentId?: string, replyToAuthor?: string) => void;
+  deleteCommunityComment: (postId: string, commentId: string) => void;
   addProduct: (newApp: Omit<Product, 'id' | 'slug' | 'feedbackCount' | 'createdAt'>) => Product;
   leaderboard: LeaderboardUser[];
   builders: Builder[];
@@ -171,6 +178,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     } catch {}
     return (initialCommunity as CommunityPost[]) || [];
+  });
+
+  const [communityComments, setCommunityComments] = useState<Record<string, CommunityComment[]>>(() => {
+    try {
+      const saved = localStorage.getItem('demon_community_comments');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') return parsed;
+      }
+    } catch {}
+    return {};
+  });
+
+  const [feedbackReplies, setFeedbackReplies] = useState<Record<string, FeedbackReply[]>>(() => {
+    try {
+      const saved = localStorage.getItem('demon_feedback_replies');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') return parsed;
+      }
+    } catch {}
+    return {};
   });
 
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>(() => {
@@ -498,6 +527,85 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return merged;
       });
     });
+
+    // 2b. Fetch feedback replies & community comments from Supabase (graceful fallback if tables not created yet)
+    if (supabase) {
+      supabase
+        .from('feedback_replies')
+        .select('*')
+        .order('created_at', { ascending: true })
+        .then(({ data, error }) => {
+          if (!error && Array.isArray(data) && data.length > 0) {
+            const remoteMap: Record<string, FeedbackReply[]> = {};
+            data.forEach((row: any) => {
+              const r: FeedbackReply = {
+                id: row.id,
+                feedbackId: row.feedback_id,
+                productId: row.product_id,
+                author: row.author || '인디 메이커',
+                authorId: row.author_id || '',
+                authorEmail: row.author_email || '',
+                avatar: row.avatar || '/demon-mascot.png',
+                content: row.content || '',
+                createdAt: row.created_at ? new Date(row.created_at).toLocaleDateString('ko-KR') : '방금 전',
+                isMaker: Boolean(row.is_maker),
+              };
+              if (!remoteMap[r.feedbackId]) remoteMap[r.feedbackId] = [];
+              remoteMap[r.feedbackId].push(r);
+            });
+            setFeedbackReplies((prev) => {
+              const merged = { ...prev };
+              Object.entries(remoteMap).forEach(([fbId, rList]) => {
+                const localList = merged[fbId] || [];
+                const remoteIds = new Set(rList.map((x) => x.id));
+                merged[fbId] = [...rList, ...localList.filter((x) => !remoteIds.has(x.id))];
+              });
+              try {
+                localStorage.setItem('demon_feedback_replies', JSON.stringify(merged));
+              } catch {}
+              return merged;
+            });
+          }
+        }, () => {});
+
+      supabase
+        .from('community_comments')
+        .select('*')
+        .order('created_at', { ascending: true })
+        .then(({ data, error }) => {
+          if (!error && Array.isArray(data) && data.length > 0) {
+            const remoteMap: Record<string, CommunityComment[]> = {};
+            data.forEach((row: any) => {
+              const c: CommunityComment = {
+                id: row.id,
+                postId: row.post_id,
+                parentId: row.parent_id || undefined,
+                replyToAuthor: row.reply_to_author || undefined,
+                author: row.author || '인디 메이커',
+                authorId: row.author_id || '',
+                authorEmail: row.author_email || '',
+                avatar: row.avatar || '/demon-mascot.png',
+                content: row.content || '',
+                createdAt: row.created_at ? new Date(row.created_at).toLocaleDateString('ko-KR') : '방금 전',
+              };
+              if (!remoteMap[c.postId]) remoteMap[c.postId] = [];
+              remoteMap[c.postId].push(c);
+            });
+            setCommunityComments((prev) => {
+              const merged = { ...prev };
+              Object.entries(remoteMap).forEach(([pId, cList]) => {
+                const localList = merged[pId] || [];
+                const remoteIds = new Set(cList.map((x) => x.id));
+                merged[pId] = [...cList, ...localList.filter((x) => !remoteIds.has(x.id))];
+              });
+              try {
+                localStorage.setItem('demon_community_comments', JSON.stringify(merged));
+              } catch {}
+              return merged;
+            });
+          }
+        }, () => {});
+    }
 
     // 3. Fetch builders from DB / API
     refreshBuilders();
@@ -1158,19 +1266,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: '방금 전',
     };
 
-    setFeedbacks((prev) => ({
-      ...prev,
-      [productId]: [newFb, ...(prev[productId] || [])],
-    }));
+    setFeedbacks((prev) => {
+      const next: Record<string, Feedback[]> = {
+        ...prev,
+        [productId]: [newFb, ...(prev[productId] || [])],
+      };
+      const prod = products.find((p) => p.id === productId || p.slug === productId);
+      if (prod) {
+        if (prod.id && prod.id !== productId) {
+          next[prod.id] = [newFb, ...(prev[prod.id] || [])];
+        }
+        if (prod.slug && prod.slug !== productId) {
+          next[prod.slug] = [newFb, ...(prev[prod.slug] || [])];
+        }
+      }
+      try {
+        localStorage.setItem('demon_feedbacks', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
 
-    setProducts((prev) =>
-      prev.map((p) => {
+    setProducts((prev) => {
+      const next = prev.map((p) => {
         if (p.id === productId || p.slug === productId) {
-          return { ...p, feedbackCount: p.feedbackCount + 1 };
+          return { ...p, feedbackCount: (p.feedbackCount || 0) + 1 };
         }
         return p;
-      })
-    );
+      });
+      try {
+        localStorage.setItem('demon_products', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+
+    setSelectedProduct((prev) => {
+      if (prev && (prev.id === productId || prev.slug === productId)) {
+        return { ...prev, feedbackCount: (prev.feedbackCount || 0) + 1 };
+      }
+      return prev;
+    });
 
     // Save to Supabase DB in background
     insertFeedbackToDB(newFb).catch((err) => console.warn('Supabase feedback save error:', err));
@@ -1252,15 +1386,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const toggleCommunityPostUpvote = useCallback(
     (postId: string) => {
-      let uId = user.id || user.email;
-      if (!uId) {
-        let guestId = localStorage.getItem('demon_guest_id');
-        if (!guestId) {
-          guestId = 'guest_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
-          localStorage.setItem('demon_guest_id', guestId);
-        }
-        uId = guestId;
+      if (!user.isLoggedIn) {
+        setLoginModalMessage('게시글을 추천하려면 먼저 로그인이 필요합니다.');
+        setIsLoginModalOpen(true);
+        showToast('로그인 후 추천할 수 있습니다.');
+        return;
       }
+      const uId = user.id || user.email;
+      if (!uId) return;
 
       const key = `demon_community_upvotes_${uId}`;
       const isUpvoted = upvotedCommunityPostIds.includes(postId);
@@ -1300,6 +1433,201 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 
   const toggleLikePost = toggleCommunityPostUpvote;
+
+  // Community Comments & Replies Management
+  const addCommunityComment = useCallback(
+    (postId: string, commentContent: string, parentId?: string, replyToAuthor?: string) => {
+      if (!user.isLoggedIn) {
+        setLoginModalMessage(parentId ? '답글을 작성하려면 먼저 로그인이 필요합니다.' : '댓글을 작성하려면 먼저 로그인이 필요합니다.');
+        setIsLoginModalOpen(true);
+        showToast(parentId ? '로그인 후 답글을 작성할 수 있습니다.' : '로그인 후 댓글을 작성할 수 있습니다.');
+        return;
+      }
+      const trimmed = commentContent.trim();
+      if (!trimmed) return;
+
+      const newComment: CommunityComment = {
+        id: 'cc-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+        postId,
+        parentId: parentId || undefined,
+        replyToAuthor: replyToAuthor || undefined,
+        author: user.name || '인디 메이커',
+        authorId: user.id || user.email,
+        authorEmail: user.email,
+        avatar: user.avatar || '/demon-mascot.png',
+        content: trimmed,
+        createdAt: '방금 전',
+      };
+
+      setCommunityComments((prev) => {
+        const next = {
+          ...prev,
+          [postId]: [...(prev[postId] || []), newComment],
+        };
+        try {
+          localStorage.setItem('demon_community_comments', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      setCommunityPosts((prev) => {
+        const next = prev.map((p) => (p.id === postId ? { ...p, comments: (p.comments || 0) + 1 } : p));
+        try {
+          localStorage.setItem('demon_community', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      // Best-effort sync to Supabase community_comments table if created
+      if (supabase) {
+        supabase
+          .from('community_comments')
+          .insert([
+            {
+              id: newComment.id,
+              post_id: newComment.postId,
+              parent_id: newComment.parentId || null,
+              reply_to_author: newComment.replyToAuthor || null,
+              author: newComment.author,
+              author_id: newComment.authorId,
+              author_email: newComment.authorEmail,
+              avatar: newComment.avatar,
+              content: newComment.content,
+            },
+          ])
+          .then(() => {}, () => {});
+      }
+
+      showToast(parentId ? '↩️ 답글이 등록되었습니다!' : '💬 댓글이 성공적으로 등록되었습니다!');
+    },
+    [user, showToast]
+  );
+
+  const deleteCommunityComment = useCallback(
+    (postId: string, commentId: string) => {
+      let removedCount = 1;
+      setCommunityComments((prev) => {
+        const list = prev[postId] || [];
+        const filtered = list.filter((c) => c.id !== commentId && c.parentId !== commentId);
+        removedCount = Math.max(1, list.length - filtered.length);
+        const next = {
+          ...prev,
+          [postId]: filtered,
+        };
+        try {
+          localStorage.setItem('demon_community_comments', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      setCommunityPosts((prev) => {
+        const next = prev.map((p) =>
+          p.id === postId ? { ...p, comments: Math.max(0, (p.comments || 0) - removedCount) } : p
+        );
+        try {
+          localStorage.setItem('demon_community', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      if (supabase) {
+        supabase.from('community_comments').delete().or(`id.eq.${commentId},parent_id.eq.${commentId}`).then(() => {}, () => {});
+      }
+
+      showToast('댓글을 삭제했습니다.');
+    },
+    [showToast]
+  );
+
+  // Product Feedback Replies Management (메이커/테스터 대댓글 답글)
+  const addFeedbackReply = useCallback(
+    (productId: string, feedbackId: string, replyContent: string) => {
+      if (!user.isLoggedIn) {
+        setLoginModalMessage('답글을 작성하려면 먼저 로그인이 필요합니다.');
+        setIsLoginModalOpen(true);
+        showToast('로그인 후 답글을 작성할 수 있습니다.');
+        return;
+      }
+      const trimmed = replyContent.trim();
+      if (!trimmed) return;
+
+      const prod = products.find((p) => p.id === productId || p.slug === productId);
+      const isMaker = Boolean(
+        prod &&
+          ((prod.authorId && prod.authorId === user.id) ||
+            (prod.authorEmail && user.email && prod.authorEmail.toLowerCase() === user.email.toLowerCase()) ||
+            (prod.author && user.name && prod.author === user.name))
+      );
+
+      const newReply: FeedbackReply = {
+        id: 'fr-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+        feedbackId,
+        productId,
+        author: user.name || '인디 메이커',
+        authorId: user.id || user.email,
+        authorEmail: user.email,
+        avatar: user.avatar || '/demon-mascot.png',
+        content: trimmed,
+        createdAt: '방금 전',
+        isMaker,
+      };
+
+      setFeedbackReplies((prev) => {
+        const next = {
+          ...prev,
+          [feedbackId]: [...(prev[feedbackId] || []), newReply],
+        };
+        try {
+          localStorage.setItem('demon_feedback_replies', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      if (supabase) {
+        supabase
+          .from('feedback_replies')
+          .insert([
+            {
+              id: newReply.id,
+              feedback_id: newReply.feedbackId,
+              product_id: newReply.productId,
+              author: newReply.author,
+              author_id: newReply.authorId,
+              author_email: newReply.authorEmail,
+              avatar: newReply.avatar,
+              content: newReply.content,
+              is_maker: newReply.isMaker,
+            },
+          ])
+          .then(() => {}, () => {});
+      }
+
+      showToast('↩️ 피드백에 답글이 등록되었습니다!');
+    },
+    [user, products, showToast]
+  );
+
+  const deleteFeedbackReply = useCallback(
+    (feedbackId: string, replyId: string) => {
+      setFeedbackReplies((prev) => {
+        const next = {
+          ...prev,
+          [feedbackId]: (prev[feedbackId] || []).filter((r) => r.id !== replyId),
+        };
+        try {
+          localStorage.setItem('demon_feedback_replies', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      if (supabase) {
+        supabase.from('feedback_replies').delete().eq('id', replyId).then(() => {}, () => {});
+      }
+
+      showToast('답글을 삭제했습니다.');
+    },
+    [showToast]
+  );
 
   // Add Product (Local + Supabase DB!)
   const addProduct = (newApp: Omit<Product, 'id' | 'slug' | 'feedbackCount' | 'createdAt'>) => {
@@ -1465,46 +1793,108 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('피드백이 삭제되었습니다.');
   };
 
-  // Upvoted Products State (Per-user persistent state)
+  // Upvoted Products State (Authoritative DB-synced per-account state — 1 upvote per account per project)
+  const inFlightUpvotesRef = useRef<Set<string>>(new Set());
+
+  const getAccountUpvoteIds = useCallback(() => {
+    const emailNorm = user.email ? user.email.trim().toLowerCase() : '';
+    const canonicalId = emailNorm || (user.id ? user.id.trim() : '');
+    const allIds: string[] = [];
+    if (canonicalId) allIds.push(canonicalId);
+    if (user.id && user.id.trim()) allIds.push(user.id.trim());
+    if (emailNorm) {
+      allIds.push(emailNorm);
+      // Include any legacy builder/auth UUIDs associated with this exact email address
+      builders.forEach((b) => {
+        if (b.email && b.email.trim().toLowerCase() === emailNorm && b.id) {
+          allIds.push(b.id);
+        }
+      });
+    }
+    return {
+      canonicalId,
+      allIds: Array.from(new Set(allIds.filter(Boolean))),
+    };
+  }, [user.email, user.id, builders]);
+
   const [upvotedProductIds, setUpvotedProductIds] = useState<string[]>(() => {
     try {
       const savedUser = localStorage.getItem('demon_user');
-      const uId = savedUser ? JSON.parse(savedUser)?.id : '';
-      const key = uId ? `demon_upvotes_${uId}` : 'demon_upvoted_products';
-      const saved = localStorage.getItem(key);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (parsed?.isLoggedIn) {
+          const emailNorm = parsed.email ? String(parsed.email).trim().toLowerCase() : '';
+          const uKey = emailNorm || parsed.id || '';
+          if (uKey) {
+            const saved = localStorage.getItem(`demon_upvotes_${uKey}`);
+            return saved ? JSON.parse(saved) : [];
+          }
+        }
+      }
+    } catch {}
+    return [];
   });
 
-  // Sync user-specific upvotes on login or user switch
+  // Sync authoritative account upvotes from Supabase on login, device switch, or email resolution
   useEffect(() => {
-    const uId = user.isLoggedIn ? (user.id || user.email) : '';
-    if (uId) {
-      const key = `demon_upvotes_${uId}`;
-      const saved = localStorage.getItem(key);
-      if (saved) {
-        try {
-          setUpvotedProductIds(JSON.parse(saved));
-        } catch {}
-      }
+    if (!user.isLoggedIn) {
+      setUpvotedProductIds([]);
+      try {
+        localStorage.removeItem('demon_guest_id');
+        localStorage.removeItem('demon_upvoted_products');
+      } catch {}
+      return;
+    }
 
-      fetchUserUpvotesFromDB(uId).then((remoteIds) => {
-        if (remoteIds && remoteIds.length > 0) {
-          setUpvotedProductIds((prev) => {
-            const merged = Array.from(new Set([...prev, ...remoteIds]));
-            try {
-              localStorage.setItem(key, JSON.stringify(merged));
-            } catch {}
-            return merged;
+    const { canonicalId, allIds } = getAccountUpvoteIds();
+    if (!canonicalId || allIds.length === 0) return;
+
+    const storageKey = `demon_upvotes_${canonicalId}`;
+    let cancelled = false;
+
+    // Load cached immediately for snappy UI, then strictly overwrite with authoritative DB truth
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        setUpvotedProductIds(JSON.parse(saved));
+      } catch {}
+    }
+
+    fetchUserUpvotesFromDB(allIds).then((remoteIds) => {
+      if (cancelled || remoteIds === null) return;
+      // Strictly replace with DB truth so logout/cancel on another device stays 100% synced!
+      setUpvotedProductIds(remoteIds);
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(remoteIds));
+      } catch {}
+    });
+
+    // Real-time sync across devices when product_upvotes changes in Supabase
+    if (!supabase) return () => { cancelled = true; };
+
+    const channel = supabase
+      .channel(`user_upvotes_${canonicalId.replace(/[^a-z0-9]/gi, '_')}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'product_upvotes' },
+        () => {
+          fetchUserUpvotesFromDB(allIds).then((remoteIds) => {
+            if (!cancelled && remoteIds !== null) {
+              setUpvotedProductIds(remoteIds);
+              try {
+                localStorage.setItem(storageKey, JSON.stringify(remoteIds));
+              } catch {}
+            }
           });
         }
-      });
-    } else {
-      setUpvotedProductIds([]);
-    }
-  }, [user.isLoggedIn, user.id, user.email]);
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase?.removeChannel(channel);
+    };
+  }, [user.isLoggedIn, getAccountUpvoteIds]);
 
   const isProductUpvoted = useCallback(
     (productId: string) => upvotedProductIds.includes(productId),
@@ -1542,68 +1932,98 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch {}
   }, []);
 
-  // Toggle Product Upvote (Instant & Reliable for both logged-in and guest users)
+  // Toggle Product Upvote (DB-Verified Atomic: Strictly 1 upvote per account per project across ALL devices!)
   const toggleProductUpvote = useCallback(
-    (productId: string) => {
-      let uId = user.id || user.email;
-      if (!uId) {
-        let guestId = localStorage.getItem('demon_guest_id');
-        if (!guestId) {
-          guestId = 'guest_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
-          localStorage.setItem('demon_guest_id', guestId);
-        }
-        uId = guestId;
+    async (productId: string) => {
+      if (!user.isLoggedIn) {
+        setLoginModalMessage('추천(업보트)은 로그인 후 이용하실 수 있습니다.');
+        setIsLoginModalOpen(true);
+        showToast('로그인 후 업보트(추천)할 수 있습니다.');
+        return;
       }
 
-      const key = `demon_upvotes_${uId}`;
-      const isUpvoted = upvotedProductIds.includes(productId);
-      const nextUpvoted = isUpvoted
-        ? upvotedProductIds.filter((id) => id !== productId)
-        : [...upvotedProductIds, productId];
+      const { canonicalId, allIds } = getAccountUpvoteIds();
+      if (!canonicalId || allIds.length === 0) return;
 
-      setUpvotedProductIds(nextUpvoted);
-      try {
-        localStorage.setItem(key, JSON.stringify(nextUpvoted));
-      } catch {}
+      // Prevent rapid double-click race conditions
+      if (inFlightUpvotesRef.current.has(productId)) return;
+      inFlightUpvotesRef.current.add(productId);
 
-      const delta = isUpvoted ? -1 : 1;
+      const storageKey = `demon_upvotes_${canonicalId}`;
+      const currentlyUpvoted = upvotedProductIds.includes(productId);
+      const wantUpvote = !currentlyUpvoted;
 
-      setProducts((prev) => {
-        const next = prev.map((p) => {
-          if (p.id === productId || p.slug === productId) {
-            const currentUpvotes = p.upvotes || 0;
-            return { ...p, upvotes: Math.max(0, currentUpvotes + delta) };
-          }
-          return p;
+      const syncProductCount = (exactCount?: number, fallbackDelta?: number) => {
+        setProducts((prev) => {
+          const next = prev.map((p) => {
+            if (p.id === productId || p.slug === productId) {
+              const nextVal =
+                typeof exactCount === 'number'
+                  ? Math.max(0, exactCount)
+                  : Math.max(0, (p.upvotes || 0) + (fallbackDelta || 0));
+              return { ...p, upvotes: nextVal };
+            }
+            return p;
+          });
+          try {
+            localStorage.setItem('demon_products', JSON.stringify(next));
+          } catch {}
+          return next;
         });
-        try {
-          localStorage.setItem('demon_products', JSON.stringify(next));
-        } catch {}
-        return next;
-      });
 
-      setSelectedProduct((prev) => {
-        if (prev && (prev.id === productId || prev.slug === productId)) {
-          const currentUpvotes = prev.upvotes || 0;
-          return { ...prev, upvotes: Math.max(0, currentUpvotes + delta) };
+        setSelectedProduct((prev) => {
+          if (prev && (prev.id === productId || prev.slug === productId)) {
+            const nextVal =
+              typeof exactCount === 'number'
+                ? Math.max(0, exactCount)
+                : Math.max(0, (prev.upvotes || 0) + (fallbackDelta || 0));
+            return { ...prev, upvotes: nextVal };
+          }
+          return prev;
+        });
+      };
+
+      const updateUpvotedList = (shouldContain: boolean) => {
+        setUpvotedProductIds((prev) => {
+          const next = shouldContain
+            ? Array.from(new Set([...prev, productId]))
+            : prev.filter((id) => id !== productId);
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(next));
+          } catch {}
+          return next;
+        });
+      };
+
+      try {
+        // Strictly verify & execute atomically against Supabase BEFORE changing counts!
+        const res = await toggleProductUpvoteAtomicInDB(canonicalId, allIds, productId, wantUpvote);
+
+        if (res.status === 'added') {
+          updateUpvotedList(true);
+          syncProductCount(res.upvotes, 1);
+          showToast('🔥 프로젝트를 추천(업보트)했습니다!');
+        } else if (res.status === 'already_upvoted') {
+          // Cross-device / post-logout duplicate caught by DB! Sync UI without adding +1!
+          updateUpvotedList(true);
+          syncProductCount(res.upvotes);
+          showToast('이미 이 계정으로 업보트한 프로젝트입니다. (계정당 프로젝트별 1회 제한)');
+        } else if (res.status === 'removed') {
+          updateUpvotedList(false);
+          syncProductCount(res.upvotes, -1);
+          showToast('추천을 취소했습니다.');
+        } else if (res.status === 'not_upvoted') {
+          updateUpvotedList(false);
+          syncProductCount(res.upvotes);
+          showToast('이미 추천이 취소된 프로젝트입니다.');
+        } else {
+          showToast('업보트 처리 중 일시적인 오류가 발생했습니다. 다시 시도해주세요.');
         }
-        return prev;
-      });
-
-      // Record persistent user-product association in DB (if logged in)
-      if (user.isLoggedIn && (user.id || user.email)) {
-        recordProductUpvoteInDB(uId, productId, !isUpvoted).catch(() => {});
-      }
-
-      if (isUpvoted) {
-        decrementProductUpvoteInDB(productId).catch(() => {});
-        showToast('추천을 취소했습니다.');
-      } else {
-        incrementProductUpvoteInDB(productId).catch(() => {});
-        showToast('🔥 프로젝트를 추천(업보트)했습니다!');
+      } finally {
+        inFlightUpvotesRef.current.delete(productId);
       }
     },
-    [upvotedProductIds, showToast, user]
+    [upvotedProductIds, showToast, user.isLoggedIn, getAccountUpvoteIds]
   );
 
   const nextQuote = () => {
@@ -1627,6 +2047,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         feedbacks,
         addFeedback,
         deleteFeedback,
+        feedbackReplies,
+        addFeedbackReply,
+        deleteFeedbackReply,
         user,
         loginAsDemoUser,
         loginWithCustomEmail,
@@ -1644,6 +2067,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toggleLikePost,
         toggleCommunityPostUpvote,
         isCommunityPostUpvoted,
+        communityComments,
+        addCommunityComment,
+        deleteCommunityComment,
         addProduct,
         leaderboard,
         builders,

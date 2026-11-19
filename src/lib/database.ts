@@ -265,21 +265,151 @@ export async function decrementProductUpvoteInDB(productId: string): Promise<boo
   }
 }
 
-// User-specific Upvote Management (Prevents multiple upvoting across logins/devices)
-export async function fetchUserUpvotesFromDB(userId: string): Promise<string[]> {
-  if (!supabase || !userId) return [];
+// User-specific Upvote Management (Strictly 1 upvote per account per project across ALL devices & logins)
+export interface AtomicUpvoteResult {
+  status: 'added' | 'removed' | 'already_upvoted' | 'not_upvoted' | 'error';
+  upvotes?: number;
+}
+
+export async function fetchUserUpvotesFromDB(userIds: string | string[]): Promise<string[] | null> {
+  if (!supabase) return null;
+  const ids = (Array.isArray(userIds) ? userIds : [userIds])
+    .map((s) => (s || '').trim())
+    .filter(Boolean);
+  const uniqueIds = Array.from(new Set(ids));
+  if (uniqueIds.length === 0) return [];
+
   try {
     const { data, error } = await supabase
       .from('product_upvotes')
       .select('product_id')
-      .eq('user_id', userId);
+      .in('user_id', uniqueIds);
+
     if (!error && Array.isArray(data)) {
-      return data.map((row: any) => row.product_id).filter(Boolean);
+      return Array.from(new Set(data.map((row: any) => row.product_id).filter(Boolean)));
+    }
+    if (error) {
+      console.warn('fetchUserUpvotesFromDB warning:', error.message);
+      return null;
     }
   } catch (err) {
     console.warn('fetchUserUpvotesFromDB warning:', err);
   }
-  return [];
+  return null;
+}
+
+/**
+ * DB-First Atomic Upvote Toggle:
+ * Guarantees strictly 1 upvote per account per project even across logout/relogin,
+ * multiple devices, multiple browsers, or simultaneous double-clicks!
+ */
+export async function toggleProductUpvoteAtomicInDB(
+  canonicalUserId: string,
+  allUserIds: string[],
+  productId: string,
+  wantUpvote: boolean
+): Promise<AtomicUpvoteResult> {
+  const uniqueIds = Array.from(new Set([canonicalUserId, ...allUserIds].map((s) => (s || '').trim()).filter(Boolean)));
+  if (!canonicalUserId || !productId || uniqueIds.length === 0) {
+    return { status: 'error' };
+  }
+
+  // Fallback when Supabase is not configured
+  if (!supabase) {
+    if (wantUpvote) {
+      syncApiPost('products', 'increment_upvote', { id: productId });
+      return { status: 'added' };
+    } else {
+      syncApiPost('products', 'decrement_upvote', { id: productId });
+      return { status: 'removed' };
+    }
+  }
+
+  const sb = supabase;
+  try {
+    // 1. Check authoritative DB state across ALL identifiers of this account (email + UUID)
+    const { data: existingRows, error: checkError } = await sb
+      .from('product_upvotes')
+      .select('user_id, product_id')
+      .eq('product_id', productId)
+      .in('user_id', uniqueIds);
+
+    if (checkError) {
+      console.warn('toggleProductUpvoteAtomicInDB check error:', checkError.message);
+      return { status: 'error' };
+    }
+
+    const alreadyHasRow = Array.isArray(existingRows) && existingRows.length > 0;
+
+    const getCurrentProductUpvotes = async (): Promise<number | undefined> => {
+      const { data } = await sb.from('products').select('upvotes').eq('id', productId).single();
+      return data ? (data.upvotes || 0) : undefined;
+    };
+
+    if (wantUpvote) {
+      // Strictly block duplicate upvote!
+      if (alreadyHasRow) {
+        const currentUpvotes = await getCurrentProductUpvotes();
+        return { status: 'already_upvoted', upvotes: currentUpvotes };
+      }
+
+      // Use strict INSERT (NEVER upsert!) so PostgreSQL composite PK (user_id, product_id)
+      // atomically blocks race conditions from 2 devices clicking at the same millisecond!
+      const { error: insertError } = await sb
+        .from('product_upvotes')
+        .insert([{ user_id: canonicalUserId, product_id: productId }]);
+
+      if (insertError) {
+        // 23505 = PostgreSQL unique_violation (duplicate key)
+        if (insertError.code === '23505' || /duplicate key/i.test(insertError.message || '')) {
+          const currentUpvotes = await getCurrentProductUpvotes();
+          return { status: 'already_upvoted', upvotes: currentUpvotes };
+        }
+        console.warn('toggleProductUpvoteAtomicInDB insert error:', insertError.message);
+        return { status: 'error' };
+      }
+
+      // INSERT genuinely succeeded -> now increment products.upvotes exactly once
+      const cur = (await getCurrentProductUpvotes()) ?? 0;
+      const nextUpvotes = cur + 1;
+      await sb.from('products').update({ upvotes: nextUpvotes }).eq('id', productId);
+      syncApiPost('products', 'increment_upvote', { id: productId });
+      return { status: 'added', upvotes: nextUpvotes };
+    } else {
+      // Cancel upvote: delete ALL rows matching any identifier of this account
+      if (!alreadyHasRow) {
+        const currentUpvotes = await getCurrentProductUpvotes();
+        return { status: 'not_upvoted', upvotes: currentUpvotes };
+      }
+
+      const { data: deletedRows, error: deleteError } = await sb
+        .from('product_upvotes')
+        .delete()
+        .eq('product_id', productId)
+        .in('user_id', uniqueIds)
+        .select('user_id');
+
+      if (deleteError) {
+        console.warn('toggleProductUpvoteAtomicInDB delete error:', deleteError.message);
+        return { status: 'error' };
+      }
+
+      // Only decrement if at least 1 row was ACTUALLY deleted from DB!
+      if (!deletedRows || deletedRows.length === 0) {
+        const currentUpvotes = await getCurrentProductUpvotes();
+        return { status: 'not_upvoted', upvotes: currentUpvotes };
+      }
+
+      const cur = (await getCurrentProductUpvotes()) ?? 0;
+      const nextUpvotes = Math.max(0, cur - 1);
+      await sb.from('products').update({ upvotes: nextUpvotes }).eq('id', productId);
+      syncApiPost('products', 'decrement_upvote', { id: productId });
+      return { status: 'removed', upvotes: nextUpvotes };
+    }
+  } catch (err) {
+    console.warn('toggleProductUpvoteAtomicInDB error:', err);
+    return { status: 'error' };
+  }
 }
 
 export async function recordProductUpvoteInDB(userId: string, productId: string, isUpvoted: boolean): Promise<boolean> {
@@ -288,8 +418,8 @@ export async function recordProductUpvoteInDB(userId: string, productId: string,
     if (isUpvoted) {
       const { error } = await supabase
         .from('product_upvotes')
-        .upsert([{ user_id: userId, product_id: productId }]);
-      if (error) {
+        .insert([{ user_id: userId, product_id: productId }]);
+      if (error && error.code !== '23505') {
         console.warn('recordProductUpvoteInDB insert warning:', error.message);
       }
     } else {
