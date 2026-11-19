@@ -1,21 +1,52 @@
+# demonst - Open Crawling Policy for All Search Engines & Image Bots
 User-agent: *
 Allow: /
+Allow: /api/sitemap
+Allow: /api/image-sitemap
+Allow: /api/feed
+Disallow: /api/sync
 
-# Googlebot & Image crawler rules
+# Google Search, Mobile, Image & Video Bots
 User-agent: Googlebot
 Allow: /
 
 User-agent: Googlebot-Image
 Allow: /
 
-User-agent: Bingbot
+User-agent: Googlebot-Mobile
 Allow: /
 
+User-agent: Googlebot-Video
+Allow: /
+
+User-agent: AdsBot-Google
+Allow: /
+
+# Naver, Daum, Bing & AI Search Bots
 User-agent: Yeti
+Allow: /
+
+User-agent: NaverBot
 Allow: /
 
 User-agent: Daumoa
 Allow: /
 
-# Canonical Sitemap URL
+User-agent: Bingbot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+# Sitemaps (Pages + Dedicated Google Image Sitemap)
 Sitemap: https://demonst.vercel.app/sitemap.xml
+Sitemap: https://demonst.vercel.app/image-sitemap.xml

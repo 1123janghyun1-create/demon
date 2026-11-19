@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://demonst.vercel.app/</loc>
+    <image:image><image:loc>https://demonst.vercel.app/demon-mascot.png</image:loc><image:title>demonst 공식 마스코트</image:title></image:image>
+    <image:image><image:loc>https://demonst.vercel.app/logo.png</image:loc><image:title>demonst 공식 로고</image:title></image:image>
+    <image:image><image:loc>https://demonst.vercel.app/logo-cropped.png</image:loc><image:title>demonst 크롭 로고</image:title></image:image>
+    <image:image><image:loc>https://demonst.vercel.app/icon-512.png</image:loc><image:title>demonst 아이콘 512px</image:title></image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?product=app-1794915128902</loc>
+    <image:image>
+      <image:loc>https://cozit.app/opengraph-image?f62f20ded988df22</image:loc>
+      <image:title>Cozit 대표 스크린샷</image:title>
+      <image:caption>Meet users. Build together.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://cozit.app/favicon.ico?favicon.2o7utyby3rtrj.ico</image:loc>
+      <image:title>Cozit 로고 아이콘</image:title>
+      <image:caption>Cozit 로고</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?product=app-1794472799159</loc>
+    <image:image>
+      <image:loc>https://res.cloudinary.com/xi7gmxxu/image/upload/v1794472329/sukklaeg1didkuqnuwgt.png</image:loc>
+      <image:title>우리집 모아성 대표 스크린샷</image:title>
+      <image:caption>집안일을 눈에 보이게 하는 방법</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://res.cloudinary.com/xi7gmxxu/image/upload/v1794472114/qvtlbeyipbfjzkpb4c2f.png</image:loc>
+      <image:title>우리집 모아성 로고 아이콘</image:title>
+      <image:caption>우리집 모아성 로고</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://res.cloudinary.com/xi7gmxxu/image/upload/v1794472357/uqhykkioktc7kuabevaf.png</image:loc>
+      <image:title>우리집 모아성 갤러리 스크린샷 #2</image:title>
+      <image:caption>집안일을 눈에 보이게 하는 방법</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://res.cloudinary.com/xi7gmxxu/image/upload/v1794472418/cn7bdkmbrmeoh8zduscd.png</image:loc>
+      <image:title>우리집 모아성 갤러리 스크린샷 #3</image:title>
+      <image:caption>집안일을 눈에 보이게 하는 방법</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?product=app-1794447209771</loc>
+    <image:image>
+      <image:loc>https://media.base44.com/images/public/6aa3c992c70511d2f2a7de18/27abee040_1000013899.jpg/v1/fill/w_1200,h_630/27abee040_1000013899.jpg</image:loc>
+      <image:title>SchoolEcho 대표 스크린샷</image:title>
+      <image:caption>중학생 개발자 Hyun이 만든 전국 초·중·고교생을 위한 필수 학교 생활 도우미.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.google.com/s2/favicons?domain=schoolecho.base44.app&amp;sz=256</image:loc>
+      <image:title>SchoolEcho 로고 아이콘</image:title>
+      <image:caption>SchoolEcho 로고</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://image.thum.io/get/width/1280/crop/800/noanimate/http://schoolecho.base44.app</image:loc>
+      <image:title>SchoolEcho 갤러리 스크린샷 #2</image:title>
+      <image:caption>중학생 개발자 Hyun이 만든 전국 초·중·고교생을 위한 필수 학교 생활 도우미.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://image.thum.io/get/width/480/crop/854/noanimate/http://schoolecho.base44.app</image:loc>
+      <image:title>SchoolEcho 갤러리 스크린샷 #3</image:title>
+      <image:caption>중학생 개발자 Hyun이 만든 전국 초·중·고교생을 위한 필수 학교 생활 도우미.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://res.cloudinary.com/xi7gmxxu/image/upload/v1794453413/ocdkrtohwynxnsvpitth.png</image:loc>
+      <image:title>SchoolEcho 테스터 피드백 캡처 #1</image:title>
+      <image:caption>짱이에요!</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://res.cloudinary.com/xi7gmxxu/image/upload/v1795006990/fnpqzqjx7yu7ldpdryo1.png</image:loc>
+      <image:title>SchoolEcho 테스터 피드백 캡처 #3</image:title>
+      <image:caption>수정완료 되었습니다.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?product=app-1794916251122</loc>
+    <image:image>
+      <image:loc>https://weartryon.com/images/home/ai-clothes-changer-og.webp</image:loc>
+      <image:title>Free AI Clothes Changer Online: Change Clothes in Any Photo 대표 스크린샷</image:title>
+      <image:caption>Free AI clothes changer online: upload your photo, pick...</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://weartryon.com/favicon.ico?favicon.0rnu-j4q3pcft.ico</image:loc>
+      <image:title>Free AI Clothes Changer Online: Change Clothes in Any Photo 로고 아이콘</image:title>
+      <image:caption>Free AI Clothes Changer Online: Change Clothes in Any Photo 로고</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://image.thum.io/get/width/1280/crop/800/noanimate/https://weartryon.com/</image:loc>
+      <image:title>Free AI Clothes Changer Online: Change Clothes in Any Photo 갤러리 스크린샷 #2</image:title>
+      <image:caption>Free AI clothes changer online: upload your photo, pick...</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://image.thum.io/get/width/480/crop/854/noanimate/https://weartryon.com/</image:loc>
+      <image:title>Free AI Clothes Changer Online: Change Clothes in Any Photo 갤러리 스크린샷 #3</image:title>
+      <image:caption>Free AI clothes changer online: upload your photo, pick...</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=c9cfe311-84b4-45fd-ae02-acce6d28ff0a</loc>
+    <image:image>
+      <image:loc>https://demonst.vercel.app/demon-mascot.png</image:loc>
+      <image:title>Hawon Min 빌더 프로필</image:title>
+      <image:caption>demonst 메이커</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=b42f02d8-9177-481e-92b5-975b1b481c39</loc>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocK8Q8sCthWb-mQ4tHCmaZmI0IAZ_7DGJWvAHUYN0GelFKHDINI=s96-c</image:loc>
+      <image:title>New Era 404 빌더 프로필</image:title>
+      <image:caption>demonst 메이커</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=277b1372-2429-46a8-87ce-56749ca20257</loc>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocJzl50FaYUjrS0mZrejeWLm-XicXO7TGJC16-xZoBiN48dLcJw=s96-c</image:loc>
+      <image:title>서민아 (PrevitLAB) 빌더 프로필</image:title>
+      <image:caption>demonst 메이커</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=0ad5aa4c-c1e4-4a27-b750-051369fa04ab</loc>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocKIY-OfEnQ35IPnWavrvY7cg2tiOZ7uaurnvM-14uCHAvvXQQ=s96-c</image:loc>
+      <image:title>장현 빌더 프로필</image:title>
+      <image:caption>demonst 메이커</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=5baa0db7-208a-4890-8c74-5eb46874e83e</loc>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocJid_qTs97_JwVShvegPA6qNattLexgeBGBuyOze-8dzhsLxv8=s96-c</image:loc>
+      <image:title>킴호박고구마 빌더 프로필</image:title>
+      <image:caption>demonst 메이커</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=c5bc1402-fd9d-460e-aec9-d7bfe2149be2</loc>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocIQsIwUzNbrHi7oLcV2Ea-k_7UrxGXr0kpX2hdwWZ5CayYlYQ=s96-c</image:loc>
+      <image:title>summer aiyi 빌더 프로필</image:title>
+      <image:caption>demonst 메이커</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=a7891563-3766-443f-a51d-59607febed63</loc>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocLggCrPg9ZNm6406VyydoFZM4akABLU22lvRux6LDnVW-UoTq8=s96-c</image:loc>
+      <image:title>장현 빌더 프로필</image:title>
+      <image:caption>demonst 메이커</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=dd194096-bb05-4548-9b09-892b3d4da086</loc>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocJmMmiSCxfRMiRoMyPGmnv7Xk1vxtx5Z3toOxI1rwsNPmWFOw=s96-c</image:loc>
+      <image:title>VibeNow 빌더 프로필</image:title>
+      <image:caption>1인 앱 개발자</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=0f3ad274-e282-4a43-bc7e-9c123a3cc9be</loc>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocJemdKovTQZ8nsEar4pKlyo-ysSlFeSfrjSFbjLM8ezbgUqEdk=s96-c</image:loc>
+      <image:title>demonst 빌더 프로필</image:title>
+      <image:caption>demonst 메이커</image:caption>
+    </image:image>
+  </url>
+</urlset>
