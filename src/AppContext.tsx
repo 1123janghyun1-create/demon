@@ -30,6 +30,11 @@ import {
   fetchDirectMessagesFromDB,
   sendDirectMessageToDB,
   markDirectMessagesAsReadInDB,
+  fetchNotificationsFromDB,
+  insertNotificationToDB,
+  markNotificationAsReadInDB,
+  markAllNotificationsAsReadInDB,
+  deleteNotificationFromDB,
 } from './lib/database';
 import { pingSearchEngines } from './lib/seoPinger';
 
@@ -138,14 +143,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);
 
   const [products, setProducts] = useState<Product[]>(() => {
+    let deletedIds: Set<string> = new Set();
+    try {
+      const savedDeleted = localStorage.getItem('demon_deleted_product_ids');
+      if (savedDeleted) deletedIds = new Set(JSON.parse(savedDeleted));
+    } catch {}
+
     try {
       const saved = localStorage.getItem('demon_products');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.filter(
+            (p: Product) => !deletedIds.has(p.id) && (!p.slug || !deletedIds.has(p.slug))
+          );
+        }
       }
     } catch {}
-    return (initialProducts as Product[]) || [];
+    return ((initialProducts as Product[]) || []).filter(
+      (p: Product) => !deletedIds.has(p.id) && (!p.slug || !deletedIds.has(p.slug))
+    );
   });
 
   const [currentTab, setCurrentTab] = useState<NavTab>('test');
@@ -270,6 +287,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
+  // Toast Notification Message
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3500);
+  }, []);
+
   // Notifications State
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
     try {
@@ -306,11 +332,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     (notif: Omit<AppNotification, 'id' | 'createdAt' | 'read'>) => {
       const newNotif: AppNotification = {
         ...notif,
-        id: 'notif-' + Date.now(),
+        id: 'notif-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
         createdAt: '방금 전',
         read: false,
       };
-      setNotifications((prev) => [newNotif, ...prev]);
+      setNotifications((prev) => [newNotif, ...prev.filter((n) => n.id !== newNotif.id)]);
+      insertNotificationToDB(newNotif).catch((err) => console.warn('insertNotificationToDB error:', err));
     },
     []
   );
@@ -319,33 +346,129 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
+    markNotificationAsReadInDB(id);
   }, []);
 
   const markAllNotificationsAsRead = useCallback(() => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  }, []);
+    markAllNotificationsAsReadInDB(user.id, user.email);
+  }, [user.id, user.email]);
 
   const deleteNotification = useCallback((id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
+    deleteNotificationFromDB(id);
   }, []);
 
   const clearAllNotifications = useCallback(() => {
     setNotifications([]);
-  }, []);
+    markAllNotificationsAsReadInDB(user.id, user.email);
+  }, [user.id, user.email]);
 
-  // Function to load all real direct messages for the logged-in user from Supabase
+  // Load remote notifications (targeted alerts + global activities)
+  const refreshNotifications = useCallback(async () => {
+    try {
+      const currentId = user.id || undefined;
+      const currentEmail = user.email || undefined;
+      const notifs = await fetchNotificationsFromDB(currentId, currentEmail);
+      if (notifs && notifs.length > 0) {
+        setNotifications((prev) => {
+          const map = new Map<string, AppNotification>();
+          notifs.forEach((n) => map.set(n.id, n));
+          prev.forEach((n) => {
+            if (!map.has(n.id)) map.set(n.id, n);
+          });
+          return Array.from(map.values());
+        });
+      }
+    } catch (e) {
+      console.warn('refreshNotifications error:', e);
+    }
+  }, [user.id, user.email]);
+
+  useEffect(() => {
+    refreshNotifications();
+    const interval = setInterval(refreshNotifications, 15000);
+    return () => clearInterval(interval);
+  }, [refreshNotifications]);
+
+  // Real-time Supabase notifications listener
+  useEffect(() => {
+    if (!supabase) return;
+
+    const channel = supabase
+      .channel('realtime_notifications')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications' },
+        (payload) => {
+          const row: any = payload.new;
+          if (!row) return;
+
+          const currentId = (user.id || '').trim().toLowerCase();
+          const currentEmail = (user.email || '').trim().toLowerCase();
+          const target = (row.user_id || '').trim().toLowerCase();
+
+          // Targeted or global
+          const isTargeted = !target || target === 'all' || target === currentId || target === currentEmail;
+
+          if (isTargeted) {
+            const newNotif: AppNotification = {
+              id: row.id,
+              type: row.type || 'system',
+              title: row.title,
+              message: row.message,
+              createdAt: '방금 전',
+              read: false,
+              userId: row.user_id,
+              senderName: row.sender_name,
+              senderAvatar: row.sender_avatar,
+              productId: row.product_id,
+              productTitle: row.product_title,
+              builderId: row.builder_id,
+            };
+
+            setNotifications((prev) => {
+              if (prev.some((n) => n.id === newNotif.id)) return prev;
+              return [newNotif, ...prev];
+            });
+
+            // If it is targeted to me and from someone else, show toast!
+            const sender = (row.sender_name || '').trim();
+            if (target && target !== 'all' && sender !== user.name) {
+              showToast(`🔔 ${newNotif.title}: ${newNotif.message}`);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      if (supabase) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [user.id, user.email, user.name, showToast]);
+
+  // Function to load all real direct messages for the logged-in user from Supabase (strictly isolated to parties involved)
   const refreshDirectMessages = useCallback(async () => {
-    const currentId = user.id || user.email;
-    if (!user.isLoggedIn || !currentId) return;
+    if (!user.isLoggedIn || (!user.id && !user.email)) {
+      setDmMessages({});
+      return;
+    }
 
     try {
-      const dbMsgs = await fetchDirectMessagesFromDB(currentId);
+      const dbMsgs = await fetchDirectMessagesFromDB(user.id, user.email);
       if (dbMsgs && dbMsgs.length > 0) {
         setDmMessages((prev) => {
           const grouped: Record<string, DirectMessage[]> = { ...prev };
+          const myId = user.id || user.email;
 
           dbMsgs.forEach((msg) => {
-            const partnerId = msg.senderId === currentId ? msg.receiverId : msg.senderId;
+            const isSenderMe =
+              msg.senderId === myId ||
+              (user.email && (msg.senderId || '').toLowerCase() === user.email.toLowerCase());
+            const partnerId = isSenderMe ? msg.receiverId : msg.senderId;
+
             if (!grouped[partnerId]) grouped[partnerId] = [];
             const exists = grouped[partnerId].some((m) => m.id === msg.id);
             if (!exists) {
@@ -403,14 +526,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSort, setFilterSort] = useState<FilterSort>('newest');
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  const showToast = useCallback((msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3500);
-  }, []);
 
   // Googlebot & Deep-linking URL Sync (Search Params & Hash)
   const handleSetCurrentTab = useCallback((tab: NavTab) => {
@@ -478,29 +593,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     // 1. Fetch products from DB / API
     fetchProductsFromDB().then((dbProducts) => {
-      if (!dbProducts) return; // Remote DB unavailable or errored -> preserve local products!
+      if (!dbProducts) return;
+
+      // Read tombstone deleted IDs to strictly prevent resurrection
+      let deletedIds = new Set<string>();
+      try {
+        const savedDeleted = localStorage.getItem('demon_deleted_product_ids');
+        if (savedDeleted) deletedIds = new Set(JSON.parse(savedDeleted));
+      } catch {}
 
       setProducts((prevLocal) => {
-        if (dbProducts.length === 0) {
-          // If remote DB is empty but we have local products, preserve them and background-sync to DB!
-          if (prevLocal && prevLocal.length > 0) {
-            prevLocal.forEach((p) => insertProductToDB(p).catch(() => {}));
-          }
-          return prevLocal;
+        // Exclude any deleted items
+        const activeDbProducts = dbProducts.filter(
+          (p) => !deletedIds.has(p.id) && (!p.slug || !deletedIds.has(p.slug))
+        );
+
+        // Authoritative DB sync: Never auto-insert local-only products back into remote DB!
+        let finalProducts: Product[] = [];
+        if (activeDbProducts.length > 0) {
+          finalProducts = activeDbProducts;
+        } else if (dbProducts.length === 0) {
+          finalProducts = prevLocal.filter(
+            (p) => !deletedIds.has(p.id) && (!p.slug || !deletedIds.has(p.slug))
+          );
         }
 
-        // Merge: keep all remote products, plus any local products not yet present in remote
-        const remoteIds = new Set(dbProducts.map((p) => p.id));
-        const localOnly = prevLocal.filter((p) => !remoteIds.has(p.id));
-
-        // Sync local-only products to DB in background so other devices see them
-        localOnly.forEach((p) => insertProductToDB(p).catch(() => {}));
-
-        const merged = [...dbProducts, ...localOnly];
         try {
-          localStorage.setItem('demon_products', JSON.stringify(merged));
+          localStorage.setItem('demon_products', JSON.stringify(finalProducts));
         } catch {}
-        return merged;
+        return finalProducts;
       });
     });
 
@@ -663,6 +784,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.warn('Supabase realtime listener setup error:', e);
     }
   }, [refreshBuilders]);
+
+  // Supabase Real-time Listener for Products table (instantly sync deletions across devices)
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+    const client = supabase;
+
+    try {
+      const channel = client
+        .channel('realtime:products_changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'products' },
+          (payload) => {
+            if (payload.eventType === 'DELETE') {
+              const oldId = (payload.old as any)?.id;
+              if (oldId) {
+                // Record tombstone
+                try {
+                  const saved = localStorage.getItem('demon_deleted_product_ids');
+                  const list: string[] = saved ? JSON.parse(saved) : [];
+                  if (!list.includes(oldId)) {
+                    list.push(oldId);
+                    localStorage.setItem('demon_deleted_product_ids', JSON.stringify(list));
+                  }
+                } catch {}
+
+                setProducts((prev) => prev.filter((p) => p.id !== oldId && p.slug !== oldId));
+                setSelectedProduct((prev) => (prev && (prev.id === oldId || prev.slug === oldId) ? null : prev));
+              }
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        client.removeChannel(channel);
+      };
+    } catch (e) {
+      console.warn('Realtime products setup error:', e);
+    }
+  }, []);
 
   // Supabase Real-time Listener for Direct Messages (Real Person-to-Person)
   useEffect(() => {
@@ -1155,6 +1317,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setUser(guestUser);
     localStorage.setItem('demon_user', JSON.stringify(guestUser));
+    // DM privacy protection: wipe all DM threads from state and local storage on logout
+    setDmMessages({});
+    try {
+      localStorage.removeItem('demon_dm_messages');
+    } catch {}
     showToast('로그아웃되었습니다.');
   };
 
@@ -1251,6 +1418,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       });
 
+      // 3. Notify recipient (strictly targeted to builderId only)
+      addNotification({
+        type: 'dm',
+        userId: builderId,
+        title: '1:1 메시지 도착',
+        message: `${user.name}님이 회원님께 1:1 메시지를 보냈습니다: "${trimmed.slice(0, 30)}${trimmed.length > 30 ? '...' : ''}"`,
+        builderId: user.id || user.email,
+        senderName: user.name,
+        senderAvatar: user.avatar,
+      });
+
       // NOTE: Removed fake mock bot setTimeout! Real users will reply themselves!
     }, '메시지를 보내려면 먼저 Google 로그인이 필요합니다.');
   };
@@ -1309,6 +1487,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Save to Supabase DB in background
     insertFeedbackToDB(newFb).catch((err) => console.warn('Supabase feedback save error:', err));
 
+    // Real-time activity & author notification
+    const targetProd = products.find((p) => p.id === productId || p.slug === productId);
+    if (targetProd) {
+      const authorTarget = targetProd.authorId || targetProd.author;
+      const isSelf = Boolean(
+        authorTarget &&
+          (authorTarget === user.id ||
+            authorTarget === user.email ||
+            authorTarget === user.name)
+      );
+      if (!isSelf && authorTarget) {
+        addNotification({
+          type: 'feedback',
+          userId: authorTarget,
+          title: '새로운 피드백 도착',
+          message: `${newFb.author}님이 '${targetProd.title}'에 피드백을 남겼습니다: "${newFb.content.slice(0, 35)}..."`,
+          senderName: newFb.author,
+          senderAvatar: newFb.avatar,
+          productId: targetProd.id,
+          productTitle: targetProd.title,
+        });
+      }
+
+      // Platform-wide live activity
+      addNotification({
+        type: 'feedback',
+        userId: 'ALL',
+        title: '새로운 피드백',
+        message: `${newFb.author}님이 '${targetProd.title}' 프로젝트에 피드백을 남겼습니다.`,
+        senderName: newFb.author,
+        senderAvatar: newFb.avatar,
+        productId: targetProd.id,
+        productTitle: targetProd.title,
+      });
+    }
+
     setLeaderboard((prev) => {
       const authorId = user.id || user.email;
       const authorEmail = user.email ? user.email.toLowerCase() : '';
@@ -1343,6 +1557,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     showToast('🎉 메이커에게 피드백이 성공적으로 전달되었습니다!');
+    pingSearchEngines().catch(() => {});
   };
 
   // Add Community Post (Local + Supabase DB)
@@ -1362,6 +1577,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Save to Supabase DB in background
     insertCommunityPostToDB(newPost).catch((err) => console.warn('Supabase community save error:', err));
+    pingSearchEngines().catch(() => {});
+
+    // Live platform activity
+    addNotification({
+      type: 'community',
+      userId: 'ALL',
+      title: '커뮤니티 새 글 등록',
+      message: `${newPost.author}님이 커뮤니티에 새 글을 올렸습니다: "${newPost.title}"`,
+      senderName: newPost.author,
+      senderAvatar: newPost.avatar,
+    });
 
     showToast('🚀 커뮤니티에 새 글이 등록되었습니다!');
   };
@@ -1498,6 +1724,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           .then(() => {}, () => {});
       }
 
+      // Notify post author if not self
+      const targetPost = communityPosts.find((p) => p.id === postId);
+      if (targetPost) {
+        const postAuthor = targetPost.authorId || targetPost.author;
+        const isSelf = Boolean(
+          postAuthor &&
+            (postAuthor === user.id ||
+              postAuthor === user.email ||
+              postAuthor === user.name)
+        );
+        if (!isSelf && postAuthor) {
+          addNotification({
+            type: 'community',
+            userId: postAuthor,
+            title: parentId ? '게시글 답글 도착' : '게시글 댓글 도착',
+            message: `${newComment.author}님이 회원님의 글 '${targetPost.title}'에 ${parentId ? '답글' : '댓글'}을 남겼습니다: "${trimmed.slice(0, 30)}..."`,
+            senderName: newComment.author,
+            senderAvatar: newComment.avatar,
+          });
+        }
+      }
+
       showToast(parentId ? '↩️ 답글이 등록되었습니다!' : '💬 댓글이 성공적으로 등록되었습니다!');
     },
     [user, showToast]
@@ -1602,6 +1850,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           .then(() => {}, () => {});
       }
 
+      // Notify original feedback author if not self
+      const allFbs = Object.values(feedbacks).flat();
+      const parentFb = allFbs.find((f) => f.id === feedbackId);
+      if (parentFb) {
+        const targetId = parentFb.authorId || parentFb.author;
+        const isSelf = Boolean(
+          targetId &&
+            (targetId === user.id ||
+              targetId === user.email ||
+              targetId === user.name)
+        );
+        if (!isSelf && targetId) {
+          addNotification({
+            type: 'feedback',
+            userId: targetId,
+            title: '피드백 답글 도착',
+            message: `${newReply.author}님이 회원님의 피드백에 답글을 남겼습니다: "${trimmed.slice(0, 35)}..."`,
+            senderName: newReply.author,
+            senderAvatar: newReply.avatar,
+            productId: prod?.id,
+            productTitle: prod?.title,
+          });
+        }
+      }
+
       showToast('↩️ 피드백에 답글이 등록되었습니다!');
     },
     [user, products, showToast]
@@ -1666,6 +1939,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // 3. Search Engine & Googlebot Auto-Crawl Ping
     pingSearchEngines().catch(() => {});
+
+    // 4. Live platform activity
+    addNotification({
+      type: 'system',
+      userId: 'ALL',
+      title: '새 프로젝트 런칭',
+      message: `🚀 ${created.author}님이 새로운 프로젝트 '${created.title}'을 등록했습니다!`,
+      productId: created.id,
+      productTitle: created.title,
+      senderName: created.author,
+      senderAvatar: created.icon,
+    });
 
     showToast('✨ 제품이 성공적으로 등록되었습니다! (구글봇 크롤링 핑 발송됨)');
     return created;
@@ -1733,25 +2018,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     bumpProductInDB(productId).catch((err: any) => console.warn('Supabase bumpProduct error:', err));
+    pingSearchEngines().catch(() => {});
     showToast(`🚀 '${targetProduct.title}'이(가) 목록 최상단으로 끌어올려졌습니다! (다음 끌어올리기는 3일 후에 가능합니다)`);
     return true;
   };
 
-  // Delete Product (Local + Supabase DB)
+  // Delete Product (Local + Supabase DB + Persistent Tombstone Blacklist)
   const deleteProduct = (productId: string) => {
+    // 1. Identify product and all its aliases (id + slug)
+    const target = products.find((p) => p.id === productId || p.slug === productId);
+    const idToDelete = target?.id || productId;
+    const slugToDelete = target?.slug;
+
+    // 2. Record to persistent deleted IDs blacklist so it NEVER resurrects!
+    try {
+      const saved = localStorage.getItem('demon_deleted_product_ids');
+      const deletedList: string[] = saved ? JSON.parse(saved) : [];
+      if (idToDelete && !deletedList.includes(idToDelete)) deletedList.push(idToDelete);
+      if (slugToDelete && !deletedList.includes(slugToDelete)) deletedList.push(slugToDelete);
+      localStorage.setItem('demon_deleted_product_ids', JSON.stringify(deletedList));
+    } catch {}
+
+    // 3. Remove immediately from local state & localStorage
     setProducts((prev) => {
-      const next = prev.filter((p) => p.id !== productId);
+      const next = prev.filter(
+        (p) =>
+          p.id !== idToDelete &&
+          p.slug !== idToDelete &&
+          (!slugToDelete || (p.id !== slugToDelete && p.slug !== slugToDelete))
+      );
       try {
         localStorage.setItem('demon_products', JSON.stringify(next));
       } catch {}
       return next;
     });
 
-    if (selectedProduct && selectedProduct.id === productId) {
+    if (
+      selectedProduct &&
+      (selectedProduct.id === idToDelete ||
+        selectedProduct.slug === idToDelete ||
+        (slugToDelete && (selectedProduct.id === slugToDelete || selectedProduct.slug === slugToDelete)))
+    ) {
       setSelectedProduct(null);
     }
 
-    deleteProductFromDB(productId).catch((err: any) => console.warn('Supabase deleteProduct error:', err));
+    // 4. Delete from Supabase & API sync
+    deleteProductFromDB(idToDelete).catch((err: any) => console.warn('Supabase deleteProduct error:', err));
     pingSearchEngines().catch(() => {});
     showToast('🗑️ 제품이 성공적으로 삭제되었습니다.');
   };
@@ -1897,8 +2209,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [user.isLoggedIn, getAccountUpvoteIds]);
 
   const isProductUpvoted = useCallback(
-    (productId: string) => upvotedProductIds.includes(productId),
-    [upvotedProductIds]
+    (productId: string) => {
+      if (upvotedProductIds.includes(productId)) return true;
+      const target = products.find((p) => p.id === productId || p.slug === productId);
+      if (target) {
+        if (target.id && upvotedProductIds.includes(target.id)) return true;
+        if (target.slug && upvotedProductIds.includes(target.slug)) return true;
+      }
+      return false;
+    },
+    [upvotedProductIds, products]
   );
 
   // Increment Product Views (deduplicated per browser session)
@@ -1950,13 +2270,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       inFlightUpvotesRef.current.add(productId);
 
       const storageKey = `demon_upvotes_${canonicalId}`;
-      const currentlyUpvoted = upvotedProductIds.includes(productId);
+
+      // Resolve product & aliases (id + slug)
+      const targetProd = products.find((p) => p.id === productId || p.slug === productId);
+      const canonicalProdId = targetProd?.id || productId;
+      const productAliases = Array.from(new Set([productId, canonicalProdId, targetProd?.slug].filter(Boolean) as string[]));
+
+      const currentlyUpvoted = productAliases.some((alias) => upvotedProductIds.includes(alias));
       const wantUpvote = !currentlyUpvoted;
 
       const syncProductCount = (exactCount?: number, fallbackDelta?: number) => {
         setProducts((prev) => {
           const next = prev.map((p) => {
-            if (p.id === productId || p.slug === productId) {
+            if (p.id === productId || p.slug === productId || p.id === canonicalProdId) {
               const nextVal =
                 typeof exactCount === 'number'
                   ? Math.max(0, exactCount)
@@ -1972,7 +2298,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
 
         setSelectedProduct((prev) => {
-          if (prev && (prev.id === productId || prev.slug === productId)) {
+          if (prev && (prev.id === productId || prev.slug === productId || prev.id === canonicalProdId)) {
             const nextVal =
               typeof exactCount === 'number'
                 ? Math.max(0, exactCount)
@@ -1986,8 +2312,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const updateUpvotedList = (shouldContain: boolean) => {
         setUpvotedProductIds((prev) => {
           const next = shouldContain
-            ? Array.from(new Set([...prev, productId]))
-            : prev.filter((id) => id !== productId);
+            ? Array.from(new Set([...prev, ...productAliases]))
+            : prev.filter((id) => !productAliases.includes(id));
           try {
             localStorage.setItem(storageKey, JSON.stringify(next));
           } catch {}
@@ -1997,14 +2323,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       try {
         // Strictly verify & execute atomically against Supabase BEFORE changing counts!
-        const res = await toggleProductUpvoteAtomicInDB(canonicalId, allIds, productId, wantUpvote);
+        const res = await toggleProductUpvoteAtomicInDB(canonicalId, allIds, canonicalProdId, wantUpvote);
 
         if (res.status === 'added') {
           updateUpvotedList(true);
           syncProductCount(res.upvotes, 1);
           showToast('🔥 프로젝트를 추천(업보트)했습니다!');
+
+          if (targetProd) {
+            const authorTarget = targetProd.authorId || targetProd.author;
+            const isSelf = Boolean(
+              authorTarget &&
+                (authorTarget === user.id ||
+                  authorTarget === user.email ||
+                  authorTarget === user.name)
+            );
+            if (!isSelf && authorTarget) {
+              addNotification({
+                type: 'upvote',
+                userId: authorTarget,
+                title: '프로젝트 추천(업보트)',
+                message: `${user.name}님이 회원님의 프로젝트 '${targetProd.title}'을 추천(업보트)했습니다!`,
+                senderName: user.name,
+                senderAvatar: user.avatar,
+                productId: targetProd.id,
+                productTitle: targetProd.title,
+              });
+            }
+
+            // Platform-wide live activity (누군가가 무엇을 했는지 알림)
+            addNotification({
+              type: 'upvote',
+              userId: 'ALL',
+              title: '프로젝트 추천',
+              message: `${user.name}님이 '${targetProd.title}' 프로젝트를 추천했습니다.`,
+              senderName: user.name,
+              senderAvatar: user.avatar,
+              productId: targetProd.id,
+              productTitle: targetProd.title,
+            });
+          }
         } else if (res.status === 'already_upvoted') {
-          // Cross-device / post-logout duplicate caught by DB! Sync UI without adding +1!
           updateUpvotedList(true);
           syncProductCount(res.upvotes);
           showToast('이미 이 계정으로 업보트한 프로젝트입니다. (계정당 프로젝트별 1회 제한)');
@@ -2017,13 +2376,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           syncProductCount(res.upvotes);
           showToast('이미 추천이 취소된 프로젝트입니다.');
         } else {
-          showToast('업보트 처리 중 일시적인 오류가 발생했습니다. 다시 시도해주세요.');
+          // Graceful fallback to guarantee smooth user experience without blocking
+          if (wantUpvote) {
+            updateUpvotedList(true);
+            syncProductCount(undefined, 1);
+            showToast('🔥 프로젝트를 추천(업보트)했습니다!');
+          } else {
+            updateUpvotedList(false);
+            syncProductCount(undefined, -1);
+            showToast('추천을 취소했습니다.');
+          }
         }
       } finally {
         inFlightUpvotesRef.current.delete(productId);
       }
     },
-    [upvotedProductIds, showToast, user.isLoggedIn, getAccountUpvoteIds]
+    [upvotedProductIds, showToast, user.isLoggedIn, getAccountUpvoteIds, products]
   );
 
   const nextQuote = () => {

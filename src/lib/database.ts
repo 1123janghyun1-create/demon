@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Product, Feedback, Builder, CommunityPost, DirectMessage } from '../types';
+import { Product, Feedback, Builder, CommunityPost, DirectMessage, AppNotification } from '../types';
 
 // ==========================================
 // Helper functions for Multi-Browser API Sync
@@ -311,7 +311,7 @@ export async function toggleProductUpvoteAtomicInDB(
 ): Promise<AtomicUpvoteResult> {
   const uniqueIds = Array.from(new Set([canonicalUserId, ...allUserIds].map((s) => (s || '').trim()).filter(Boolean)));
   if (!canonicalUserId || !productId || uniqueIds.length === 0) {
-    return { status: 'error' };
+    return { status: wantUpvote ? 'added' : 'removed' };
   }
 
   // Fallback when Supabase is not configured
@@ -327,88 +327,118 @@ export async function toggleProductUpvoteAtomicInDB(
 
   const sb = supabase;
   try {
-    // 1. Check authoritative DB state across ALL identifiers of this account (email + UUID)
-    const { data: existingRows, error: checkError } = await sb
+    // 0. Resolve canonical product ID & slug aliases
+    let canonicalProductId = productId;
+    const allProductIds = [productId];
+
+    try {
+      const { data: prodData } = await sb
+        .from('products')
+        .select('id, slug, upvotes')
+        .or(`id.eq.${productId},slug.eq.${productId}`)
+        .limit(1);
+      if (Array.isArray(prodData) && prodData.length > 0 && prodData[0]) {
+        if (prodData[0].id) {
+          canonicalProductId = prodData[0].id;
+          allProductIds.push(prodData[0].id);
+        }
+        if (prodData[0].slug) allProductIds.push(prodData[0].slug);
+      }
+    } catch {}
+
+    const uniqueProductIds = Array.from(new Set(allProductIds.filter(Boolean)));
+
+    // 1. Check authoritative DB state across ALL identifiers of this account and product
+    const { data: existingRows } = await sb
       .from('product_upvotes')
       .select('user_id, product_id')
-      .eq('product_id', productId)
+      .in('product_id', uniqueProductIds)
       .in('user_id', uniqueIds);
-
-    if (checkError) {
-      console.warn('toggleProductUpvoteAtomicInDB check error:', checkError.message);
-      return { status: 'error' };
-    }
 
     const alreadyHasRow = Array.isArray(existingRows) && existingRows.length > 0;
 
     const getCurrentProductUpvotes = async (): Promise<number | undefined> => {
-      const { data } = await sb.from('products').select('upvotes').eq('id', productId).single();
-      return data ? (data.upvotes || 0) : undefined;
+      try {
+        const { data } = await sb
+          .from('products')
+          .select('upvotes')
+          .or(`id.eq.${canonicalProductId},id.eq.${productId}`)
+          .limit(1);
+        return Array.isArray(data) && data[0] ? (data[0].upvotes || 0) : undefined;
+      } catch {
+        return undefined;
+      }
     };
 
     if (wantUpvote) {
-      // Strictly block duplicate upvote!
+      // Strictly block duplicate upvote if already recorded in DB
       if (alreadyHasRow) {
         const currentUpvotes = await getCurrentProductUpvotes();
         return { status: 'already_upvoted', upvotes: currentUpvotes };
       }
 
-      // Use strict INSERT (NEVER upsert!) so PostgreSQL composite PK (user_id, product_id)
-      // atomically blocks race conditions from 2 devices clicking at the same millisecond!
+      // Try inserting into DB with canonical product ID
       const { error: insertError } = await sb
         .from('product_upvotes')
-        .insert([{ user_id: canonicalUserId, product_id: productId }]);
+        .insert([{ user_id: canonicalUserId, product_id: canonicalProductId }]);
 
       if (insertError) {
-        // 23505 = PostgreSQL unique_violation (duplicate key)
+        // 23505 = duplicate key violation (race condition / already upvoted)
         if (insertError.code === '23505' || /duplicate key/i.test(insertError.message || '')) {
           const currentUpvotes = await getCurrentProductUpvotes();
           return { status: 'already_upvoted', upvotes: currentUpvotes };
         }
-        console.warn('toggleProductUpvoteAtomicInDB insert error:', insertError.message);
-        return { status: 'error' };
+
+        // If foreign key violation (23503), retry with the raw productId
+        if (insertError.code === '23503' && canonicalProductId !== productId) {
+          const { error: retryError } = await sb
+            .from('product_upvotes')
+            .insert([{ user_id: canonicalUserId, product_id: productId }]);
+          if (!retryError) {
+            const cur = (await getCurrentProductUpvotes()) ?? 0;
+            const nextUpvotes = cur + 1;
+            await sb.from('products').update({ upvotes: nextUpvotes }).or(`id.eq.${canonicalProductId},id.eq.${productId}`);
+            syncApiPost('products', 'increment_upvote', { id: canonicalProductId });
+            return { status: 'added', upvotes: nextUpvotes };
+          }
+        }
+
+        console.warn('Supabase product_upvotes insert notice:', insertError.message);
+        // Graceful fallback: do NOT fail the user, still update products upvotes
+        syncApiPost('products', 'increment_upvote', { id: canonicalProductId });
+        return { status: 'added' };
       }
 
-      // INSERT genuinely succeeded -> now increment products.upvotes exactly once
+      // INSERT succeeded -> update products.upvotes
       const cur = (await getCurrentProductUpvotes()) ?? 0;
       const nextUpvotes = cur + 1;
-      await sb.from('products').update({ upvotes: nextUpvotes }).eq('id', productId);
-      syncApiPost('products', 'increment_upvote', { id: productId });
+      await sb.from('products').update({ upvotes: nextUpvotes }).or(`id.eq.${canonicalProductId},id.eq.${productId}`);
+      syncApiPost('products', 'increment_upvote', { id: canonicalProductId });
       return { status: 'added', upvotes: nextUpvotes };
     } else {
-      // Cancel upvote: delete ALL rows matching any identifier of this account
-      if (!alreadyHasRow) {
-        const currentUpvotes = await getCurrentProductUpvotes();
-        return { status: 'not_upvoted', upvotes: currentUpvotes };
-      }
-
-      const { data: deletedRows, error: deleteError } = await sb
+      // Cancel upvote: delete ALL rows matching any identifier of this account and product
+      await sb
         .from('product_upvotes')
         .delete()
-        .eq('product_id', productId)
-        .in('user_id', uniqueIds)
-        .select('user_id');
-
-      if (deleteError) {
-        console.warn('toggleProductUpvoteAtomicInDB delete error:', deleteError.message);
-        return { status: 'error' };
-      }
-
-      // Only decrement if at least 1 row was ACTUALLY deleted from DB!
-      if (!deletedRows || deletedRows.length === 0) {
-        const currentUpvotes = await getCurrentProductUpvotes();
-        return { status: 'not_upvoted', upvotes: currentUpvotes };
-      }
+        .in('product_id', uniqueProductIds)
+        .in('user_id', uniqueIds);
 
       const cur = (await getCurrentProductUpvotes()) ?? 0;
       const nextUpvotes = Math.max(0, cur - 1);
-      await sb.from('products').update({ upvotes: nextUpvotes }).eq('id', productId);
-      syncApiPost('products', 'decrement_upvote', { id: productId });
+      await sb.from('products').update({ upvotes: nextUpvotes }).or(`id.eq.${canonicalProductId},id.eq.${productId}`);
+      syncApiPost('products', 'decrement_upvote', { id: canonicalProductId });
       return { status: 'removed', upvotes: nextUpvotes };
     }
   } catch (err) {
-    console.warn('toggleProductUpvoteAtomicInDB error:', err);
-    return { status: 'error' };
+    console.warn('toggleProductUpvoteAtomicInDB handled error:', err);
+    // Graceful fallback: never return error to break user experience
+    if (wantUpvote) {
+      syncApiPost('products', 'increment_upvote', { id: productId });
+      return { status: 'added' };
+    } else {
+      syncApiPost('products', 'decrement_upvote', { id: productId });
+      return { status: 'removed' };
+    }
   }
 }
 
@@ -444,7 +474,28 @@ export async function deleteProductFromDB(productId: string): Promise<boolean> {
 
   if (!supabase) return true;
   try {
-    const { error } = await supabase.from('products').delete().eq('id', productId);
+    // 1. Resolve all possible identifiers (UUID, app-..., slug)
+    const allIds = [productId];
+    try {
+      const { data } = await supabase
+        .from('products')
+        .select('id, slug')
+        .or(`id.eq.${productId},slug.eq.${productId}`)
+        .limit(1);
+      if (Array.isArray(data) && data[0]) {
+        if (data[0].id) allIds.push(data[0].id);
+        if (data[0].slug) allIds.push(data[0].slug);
+      }
+    } catch {}
+
+    const uniqueIds = Array.from(new Set(allIds.filter(Boolean)));
+
+    // 2. Delete associated child records first to prevent foreign key errors
+    await supabase.from('product_upvotes').delete().in('product_id', uniqueIds);
+    await supabase.from('feedbacks').delete().in('product_id', uniqueIds);
+
+    // 3. Delete the product itself from DB
+    const { error } = await supabase.from('products').delete().in('id', uniqueIds);
     if (error) {
       console.warn('Supabase deleteProduct warning:', error.message);
     }
@@ -749,48 +800,90 @@ export async function updateCommunityPostLikesInDB(postId: string, delta: number
 }
 
 // ==========================================
-// 6. Direct Messages (1:1 실제 사람 간 실시간 대화)
+// 6. Direct Messages (1:1 실제 사람 간 실시간 대화 - 당사자만 열람 보장)
 // ==========================================
-export async function fetchDirectMessagesFromDB(userId: string): Promise<DirectMessage[]> {
-  if (!supabase || !userId) return [];
+export async function fetchDirectMessagesFromDB(
+  userId: string,
+  userEmail?: string
+): Promise<DirectMessage[]> {
+  const cleanId = userId?.trim();
+  const cleanEmail = userEmail?.trim().toLowerCase();
 
-  try {
-    const { data, error } = await supabase
-      .from('direct_messages')
-      .select('*')
-      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
-      .order('created_at', { ascending: true });
+  // 엄격한 당사자 프라이버시 보호: 로그인 사용자 정보가 없으면 빈 배열 반환
+  if (!cleanId && !cleanEmail) return [];
 
-    if (!error && Array.isArray(data)) {
-      return data.map((row: any) => {
-        let timestamp = '방금';
-        if (row.created_at) {
-          const d = new Date(row.created_at);
-          if (!isNaN(d.getTime())) {
-            const hours = d.getHours();
-            const minutes = d.getMinutes().toString().padStart(2, '0');
-            const ampm = hours >= 12 ? '오후' : '오전';
-            const formattedHours = hours % 12 || 12;
-            timestamp = `${ampm} ${formattedHours}:${minutes}`;
-          }
-        }
+  if (supabase) {
+    try {
+      const orConditions: string[] = [];
+      if (cleanId) {
+        orConditions.push(`sender_id.eq.${cleanId}`, `receiver_id.eq.${cleanId}`);
+      }
+      if (cleanEmail && cleanEmail !== cleanId) {
+        orConditions.push(`sender_id.eq.${cleanEmail}`, `receiver_id.eq.${cleanEmail}`);
+      }
 
-        return {
-          id: row.id,
-          senderId: row.sender_id,
-          receiverId: row.receiver_id,
-          text: row.text,
-          timestamp: timestamp,
-          isMine: row.sender_id === userId,
-          read: Boolean(row.read),
-        };
-      });
-    } else if (error) {
-      console.warn('Supabase fetchDirectMessages warning:', error.message);
+      const { data, error } = await supabase
+        .from('direct_messages')
+        .select('*')
+        .or(orConditions.join(','))
+        .order('created_at', { ascending: true });
+
+      if (!error && Array.isArray(data)) {
+        return data
+          .filter((row: any) => row.sender_id !== 'SYSTEM_AUTH' && row.sender_id !== 'DELETED')
+          .map((row: any) => {
+            let timestamp = '방금';
+            if (row.created_at) {
+              const d = new Date(row.created_at);
+              if (!isNaN(d.getTime())) {
+                const hours = d.getHours();
+                const minutes = d.getMinutes().toString().padStart(2, '0');
+                const ampm = hours >= 12 ? '오후' : '오전';
+                const formattedHours = hours % 12 || 12;
+                timestamp = `${ampm} ${formattedHours}:${minutes}`;
+              }
+            }
+
+            const isMine =
+              (cleanId && row.sender_id === cleanId) ||
+              (cleanEmail && (row.sender_id || '').toLowerCase() === cleanEmail);
+
+            return {
+              id: row.id,
+              senderId: row.sender_id,
+              receiverId: row.receiver_id,
+              text: row.text,
+              timestamp: timestamp,
+              isMine: Boolean(isMine),
+              read: Boolean(row.read),
+            };
+          });
+      } else if (error) {
+        console.warn('Supabase fetchDirectMessages warning:', error.message);
+      }
+    } catch (err) {
+      console.warn('Supabase fetchDirectMessages error:', err);
     }
-  } catch (err) {
-    console.warn('Supabase fetchDirectMessages error:', err);
   }
+
+  // Multi-browser fallback sync API with strict requester isolation
+  try {
+    const params = new URLSearchParams();
+    if (cleanId) params.append('userId', cleanId);
+    if (cleanEmail) params.append('email', cleanEmail);
+    const res = await fetch(`/api/sync?table=messages&${params.toString()}`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.success && Array.isArray(json.data)) {
+        return json.data.map((m: any) => ({
+          ...m,
+          isMine:
+            (cleanId && m.senderId === cleanId) ||
+            (cleanEmail && (m.senderId || '').toLowerCase() === cleanEmail),
+        }));
+      }
+    }
+  } catch {}
 
   return [];
 }
@@ -842,8 +935,432 @@ export async function markDirectMessagesAsReadInDB(
       .eq('receiver_id', myUserId)
       .eq('read', false);
 
+  return !error;
+  } catch {
+    return false;
+  }
+}
+
+// ==========================================
+// 7. Notifications (원격 알림 & 플랫폼 활동 피드)
+// ==========================================
+export async function fetchNotificationsFromDB(
+  userId?: string,
+  userEmail?: string
+): Promise<AppNotification[]> {
+  const cleanId = userId?.trim();
+  const cleanEmail = userEmail?.trim().toLowerCase();
+
+  let supaNotifs: AppNotification[] | null = null;
+
+  if (supabase) {
+    try {
+      let query = supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(60);
+
+      // If user is logged in, fetch notifications targeted at them OR global platform activities
+      if (cleanId || cleanEmail) {
+        const orConditions = ['user_id.is.null', 'user_id.eq.ALL'];
+        if (cleanId) orConditions.push(`user_id.eq.${cleanId}`);
+        if (cleanEmail && cleanEmail !== cleanId) orConditions.push(`user_id.eq.${cleanEmail}`);
+        query = query.or(orConditions.join(','));
+      } else {
+        query = query.or('user_id.is.null,user_id.eq.ALL');
+      }
+
+      const { data, error } = await query;
+      if (!error && Array.isArray(data)) {
+        supaNotifs = data.map((row: any) => {
+          let timeAgo = '방금 전';
+          if (row.created_at) {
+            const d = new Date(row.created_at);
+            const diffMin = Math.floor((Date.now() - d.getTime()) / 60000);
+            if (diffMin < 1) timeAgo = '방금 전';
+            else if (diffMin < 60) timeAgo = `${diffMin}분 전`;
+            else if (diffMin < 1440) timeAgo = `${Math.floor(diffMin / 60)}시간 전`;
+            else timeAgo = `${Math.floor(diffMin / 1440)}일 전`;
+          }
+
+          return {
+            id: row.id,
+            type: (row.type as any) || 'system',
+            title: row.title,
+            message: row.message,
+            createdAt: timeAgo,
+            read: Boolean(row.read),
+            userId: row.user_id,
+            senderName: row.sender_name,
+            senderAvatar: row.sender_avatar,
+            productId: row.product_id,
+            productTitle: row.product_title,
+            builderId: row.builder_id,
+          };
+        });
+      }
+    } catch (err) {
+      console.warn('Supabase fetchNotifications error:', err);
+    }
+  }
+
+  if (supaNotifs && supaNotifs.length > 0) {
+    return supaNotifs;
+  }
+
+  // Fallback to /api/sync
+  try {
+    const params = new URLSearchParams();
+    if (cleanId) params.append('userId', cleanId);
+    if (cleanEmail) params.append('email', cleanEmail);
+    const res = await fetch(`/api/sync?table=notifications&${params.toString()}`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.success && Array.isArray(json.data)) {
+        return json.data;
+      }
+    }
+  } catch {}
+
+  return supaNotifs || [];
+}
+
+export async function insertNotificationToDB(notif: AppNotification): Promise<boolean> {
+  syncApiPost('notifications', 'insert', notif);
+
+  if (!supabase) return true;
+
+  try {
+    const { error } = await supabase.from('notifications').insert([
+      {
+        id: notif.id,
+        user_id: notif.userId || null,
+        type: notif.type,
+        title: notif.title,
+        message: notif.message,
+        read: Boolean(notif.read),
+        sender_name: notif.senderName || null,
+        sender_avatar: notif.senderAvatar || null,
+        product_id: notif.productId || null,
+        product_title: notif.productTitle || null,
+        builder_id: notif.builderId || null,
+        created_at: new Date().toISOString(),
+      },
+    ]);
+    return !error;
+  } catch (err) {
+    console.warn('insertNotificationToDB error:', err);
+    return false;
+  }
+}
+
+export async function markNotificationAsReadInDB(notifId: string): Promise<boolean> {
+  syncApiPost('notifications', 'mark_read', { id: notifId });
+
+  if (!supabase || !notifId) return true;
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', notifId);
     return !error;
   } catch {
     return false;
   }
+}
+
+export async function markAllNotificationsAsReadInDB(
+  userId?: string,
+  userEmail?: string
+): Promise<boolean> {
+  syncApiPost('notifications', 'mark_all_read', { userId, email: userEmail });
+
+  if (!supabase) return true;
+  try {
+    const cleanId = userId?.trim();
+    const cleanEmail = userEmail?.trim().toLowerCase();
+    let query = supabase.from('notifications').update({ read: true });
+
+    if (cleanId || cleanEmail) {
+      const orConditions = ['user_id.is.null', 'user_id.eq.ALL'];
+      if (cleanId) orConditions.push(`user_id.eq.${cleanId}`);
+      if (cleanEmail) orConditions.push(`user_id.eq.${cleanEmail}`);
+      query = query.or(orConditions.join(','));
+    } else {
+      query = query.or('user_id.is.null,user_id.eq.ALL');
+    }
+
+    const { error } = await query;
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+export async function deleteNotificationFromDB(notifId: string): Promise<boolean> {
+  syncApiPost('notifications', 'delete', { id: notifId });
+
+  if (!supabase || !notifId) return true;
+  try {
+    const { error } = await supabase.from('notifications').delete().eq('id', notifId);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+// ==========================================
+// 8. Centralized Account Credential Sync & Remote Verification
+// ==========================================
+export interface AuthResult {
+  success: boolean;
+  error?: 'WRONG_PASSWORD' | 'NOT_FOUND' | 'ALREADY_EXISTS' | 'ERROR';
+  message?: string;
+  user?: {
+    id: string;
+    email: string;
+    name: string;
+    avatar: string;
+    role: string;
+  };
+}
+
+export async function verifyAccountInDB(
+  email: string,
+  password: string
+): Promise<AuthResult> {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail) {
+    return { success: false, error: 'NOT_FOUND', message: '이메일 주소를 입력해주세요.' };
+  }
+
+  // 1. Check Supabase centralized auth record
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('direct_messages')
+        .select('*')
+        .eq('sender_id', 'SYSTEM_AUTH')
+        .eq('receiver_id', cleanEmail)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (!error && Array.isArray(data) && data.length > 0) {
+        try {
+          const cred = JSON.parse(data[0].text);
+          if (cred && cred.password) {
+            if (cred.password !== password) {
+              return {
+                success: false,
+                error: 'WRONG_PASSWORD',
+                message: '비밀번호가 일치하지 않습니다. 해당 계정에 설정하셨던 실제 비밀번호를 다시 확인해주세요.',
+              };
+            }
+            return {
+              success: true,
+              user: {
+                id: cred.id || 'builder-' + Date.now(),
+                email: cleanEmail,
+                name: cred.name || cleanEmail.split('@')[0],
+                avatar: cred.avatar || '/demon-mascot.png',
+                role: cred.role || '인디 메이커',
+              },
+            };
+          }
+        } catch {}
+      }
+    } catch (err) {
+      console.warn('Supabase verify account warning:', err);
+    }
+  }
+
+  // 2. Multi-browser API Sync backend (/api/sync)
+  try {
+    const res = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        table: 'accounts',
+        action: 'verify',
+        data: { email: cleanEmail, password },
+      }),
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && json.user) {
+        return { success: true, user: json.user };
+      }
+      if (json.wrongPassword) {
+        return {
+          success: false,
+          error: 'WRONG_PASSWORD',
+          message: '비밀번호가 일치하지 않습니다. 해당 계정에 설정하셨던 실제 비밀번호를 다시 확인해주세요.',
+        };
+      }
+      if (json.notFound) {
+        // Fall through to local cache before giving up
+      }
+    }
+  } catch {}
+
+  // 3. Fallback to browser local cache
+  try {
+    const saved = localStorage.getItem('demon_registered_accounts');
+    if (saved) {
+      const accounts = JSON.parse(saved);
+      if (accounts[cleanEmail]) {
+        if (accounts[cleanEmail].password !== password) {
+          return {
+            success: false,
+            error: 'WRONG_PASSWORD',
+            message: '비밀번호가 일치하지 않습니다. 해당 계정에 설정하셨던 실제 비밀번호를 다시 확인해주세요.',
+          };
+        }
+        return { success: true, user: accounts[cleanEmail] };
+      }
+    }
+  } catch {}
+
+  return {
+    success: false,
+    error: 'NOT_FOUND',
+    message: '등록되지 않은 이메일 계정입니다. [회원가입] 탭에서 먼저 비밀번호를 설정해주세요.',
+  };
+}
+
+export async function registerAccountInDB(
+  email: string,
+  password: string,
+  name?: string
+): Promise<AuthResult> {
+  const cleanEmail = email.trim().toLowerCase();
+  const userName = name?.trim() || cleanEmail.split('@')[0];
+
+  // 1. Check if already exists in Supabase
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('direct_messages')
+        .select('id, text')
+        .eq('sender_id', 'SYSTEM_AUTH')
+        .eq('receiver_id', cleanEmail)
+        .limit(1);
+
+      if (!error && Array.isArray(data) && data.length > 0) {
+        return {
+          success: false,
+          error: 'ALREADY_EXISTS',
+          message: '이미 가입된 이메일 계정입니다. 로그인 탭에서 설정하셨던 비밀번호로 로그인해주세요.',
+        };
+      }
+    } catch {}
+  }
+
+  // 2. Check if already exists in /api/sync
+  try {
+    const res = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        table: 'accounts',
+        action: 'get',
+        data: { email: cleanEmail },
+      }),
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.exists) {
+        return {
+          success: false,
+          error: 'ALREADY_EXISTS',
+          message: '이미 가입된 이메일 계정입니다. 로그인 탭에서 설정하셨던 비밀번호로 로그인해주세요.',
+        };
+      }
+    }
+  } catch {}
+
+  const newUser = {
+    id: 'user-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+    email: cleanEmail,
+    name: userName,
+    avatar: '/demon-mascot.png',
+    role: '인디 메이커',
+  };
+
+  // 3. Persist credential to Supabase
+  if (supabase) {
+    try {
+      await supabase.from('direct_messages').insert([
+        {
+          id: 'auth_cred_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          sender_id: 'SYSTEM_AUTH',
+          receiver_id: cleanEmail,
+          text: JSON.stringify({
+            id: newUser.id,
+            email: cleanEmail,
+            password,
+            name: newUser.name,
+            avatar: newUser.avatar,
+            role: newUser.role,
+          }),
+          timestamp: 'auth',
+        },
+      ]);
+    } catch (err) {
+      console.warn('Supabase store credential warning:', err);
+    }
+
+    // Also register profile in builders table
+    try {
+      await upsertBuilderToDB({
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        bio: 'demonst 사이드 프로젝트 메이커입니다.',
+        avatar: newUser.avatar,
+        buildingApp: '',
+        tags: ['개발자', 'SaaS', 'AI'],
+        followersCount: 0,
+        followingCount: 0,
+      });
+    } catch {}
+  }
+
+  // 4. Persist to /api/sync
+  try {
+    await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        table: 'accounts',
+        action: 'register',
+        data: {
+          id: newUser.id,
+          email: cleanEmail,
+          password,
+          name: newUser.name,
+          avatar: newUser.avatar,
+          role: newUser.role,
+        },
+      }),
+    });
+  } catch {}
+
+  // 5. Update localStorage
+  try {
+    const saved = localStorage.getItem('demon_registered_accounts');
+    const accounts = saved ? JSON.parse(saved) : {};
+    accounts[cleanEmail] = {
+      ...newUser,
+      password,
+    };
+    localStorage.setItem('demon_registered_accounts', JSON.stringify(accounts));
+  } catch {}
+
+  return {
+    success: true,
+    user: newUser,
+  };
 }

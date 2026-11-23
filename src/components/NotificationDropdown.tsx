@@ -10,6 +10,8 @@ import {
   Sparkles,
   ExternalLink,
   Flame,
+  Users,
+  Rocket,
 } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { AppNotification } from '../types';
@@ -32,9 +34,11 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
     builders,
     setActiveDmBuilder,
     setIsDmInboxOpen,
+    user,
+    setCurrentTab,
   } = useApp();
 
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [filter, setFilter] = useState<'all' | 'mine' | 'unread'>('all');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close on outside click
@@ -55,8 +59,25 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
 
   if (!isOpen) return null;
 
+  const isMineNotification = (n: AppNotification) => {
+    if (!user.isLoggedIn) return false;
+    const myId = (user.id || '').trim().toLowerCase();
+    const myEmail = (user.email || '').trim().toLowerCase();
+    const myName = (user.name || '').trim().toLowerCase();
+    const target = (n.userId || '').trim().toLowerCase();
+    if (!target || target === 'all') return false;
+    return Boolean(
+      (myId && target === myId) ||
+      (myEmail && target === myEmail) ||
+      (myName && target === myName)
+    );
+  };
+
+  const myNotificationCount = notifications.filter(isMineNotification).length;
+
   const filteredNotifications = notifications.filter((n) => {
     if (filter === 'unread') return !n.read;
+    if (filter === 'mine') return isMineNotification(n);
     return true;
   });
 
@@ -89,6 +110,12 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
       return;
     }
 
+    if (notif.type === 'community') {
+      setCurrentTab('community');
+      onClose();
+      return;
+    }
+
     onClose();
   };
 
@@ -112,10 +139,16 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
             <Star className="w-4 h-4" />
           </div>
         );
+      case 'community':
+        return (
+          <div className="size-8 rounded-full bg-purple-500/10 text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/20">
+            <Users className="w-4 h-4" />
+          </div>
+        );
       default:
         return (
           <div className="size-8 rounded-full bg-accent/10 text-accent flex items-center justify-center shrink-0 border border-accent/20">
-            <Sparkles className="w-4 h-4" />
+            <Rocket className="w-4 h-4" />
           </div>
         );
     }
@@ -175,24 +208,35 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
       </div>
 
       {/* Tabs Filter */}
-      <div className="flex items-center border-b border-border bg-surface px-3 py-1.5 gap-2 text-xs">
+      <div className="flex items-center border-b border-border bg-surface px-3 py-1.5 gap-1.5 text-xs">
         <button
           type="button"
           onClick={() => setFilter('all')}
-          className={`px-2.5 py-1 rounded-btn font-bold transition-colors ${
+          className={`px-2.5 py-1 rounded-btn font-bold transition-colors cursor-pointer ${
             filter === 'all'
-              ? 'bg-surface-2 text-fg border border-border'
+              ? 'bg-surface-2 text-fg border border-border shadow-xs'
               : 'text-fg-muted hover:text-fg'
           }`}
         >
-          전체 ({notifications.length})
+          전체 활동 ({notifications.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilter('mine')}
+          className={`px-2.5 py-1 rounded-btn font-bold transition-colors cursor-pointer ${
+            filter === 'mine'
+              ? 'bg-surface-2 text-accent border border-border shadow-xs'
+              : 'text-fg-muted hover:text-fg'
+          }`}
+        >
+          내 소식 ({myNotificationCount})
         </button>
         <button
           type="button"
           onClick={() => setFilter('unread')}
-          className={`px-2.5 py-1 rounded-btn font-bold transition-colors ${
+          className={`px-2.5 py-1 rounded-btn font-bold transition-colors cursor-pointer ${
             filter === 'unread'
-              ? 'bg-surface-2 text-accent border border-border'
+              ? 'bg-surface-2 text-rose-500 border border-border shadow-xs'
               : 'text-fg-muted hover:text-fg'
           }`}
         >

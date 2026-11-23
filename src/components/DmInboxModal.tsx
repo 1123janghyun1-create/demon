@@ -35,6 +35,9 @@ export const DmInboxModal: React.FC<DmInboxModalProps> = ({ isOpen, onClose }) =
   const [isSelectingNewBuilder, setIsSelectingNewBuilder] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Track initial open state so desktop can auto-select without locking mobile navigation
+  const hasInitializedOpenRef = useRef(false);
+
   // Quick reply prompt chips
   const quickReplies = [
     '👋 안녕하세요! 프로젝트 잘 봤습니다.',
@@ -53,18 +56,49 @@ export const DmInboxModal: React.FC<DmInboxModalProps> = ({ isOpen, onClose }) =
     });
   }, [builders, dmMessages, user]);
 
-  // If activeDmBuilder is not set but we have active threads, auto-select the first one
+  // Clean close handler that clears active builder and closes modal
+  const handleClose = () => {
+    setActiveDmBuilder(null);
+    onClose();
+  };
+
+  // Handle Escape key navigation
   useEffect(() => {
-    if (isOpen && !activeDmBuilder) {
-      if (activeThreads.length > 0) {
-        setActiveDmBuilder(activeThreads[0]);
-      } else if (builders.length > 0) {
-        // Find first other builder
-        const other = builders.find((b) => b.id !== user.id && b.email !== user.email);
-        if (other) setActiveDmBuilder(other);
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (activeDmBuilder && typeof window !== 'undefined' && window.innerWidth < 640) {
+          // On mobile: Escape goes back to thread list first
+          setActiveDmBuilder(null);
+        } else {
+          handleClose();
+        }
       }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, activeDmBuilder]);
+
+  // If activeDmBuilder is not set on initial open on DESKTOP only, auto-select the first one
+  useEffect(() => {
+    if (isOpen) {
+      if (!hasInitializedOpenRef.current) {
+        hasInitializedOpenRef.current = true;
+        const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 640;
+        // On desktop only: if no builder was selected when modal opens, auto-select the first conversation
+        if (isDesktop && !activeDmBuilder) {
+          if (activeThreads.length > 0) {
+            setActiveDmBuilder(activeThreads[0]);
+          } else if (builders.length > 0) {
+            const other = builders.find((b) => b.id !== user.id && b.email !== user.email);
+            if (other) setActiveDmBuilder(other);
+          }
+        }
+      }
+    } else {
+      hasInitializedOpenRef.current = false;
     }
-  }, [isOpen, activeDmBuilder, activeThreads, builders, user, setActiveDmBuilder]);
+  }, [isOpen, activeThreads, builders, user, setActiveDmBuilder]);
 
   // Mark thread as read when activeDmBuilder changes
   useEffect(() => {
@@ -101,33 +135,52 @@ export const DmInboxModal: React.FC<DmInboxModalProps> = ({ isOpen, onClose }) =
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-150"
+      onClick={handleClose}
+    >
       <div
-        className="relative w-full max-w-4xl h-[620px] flex rounded-2xl border border-border bg-surface shadow-2xl overflow-hidden"
+        className="relative w-full max-w-4xl h-[92vh] sm:h-[640px] max-h-[720px] flex rounded-2xl border border-border bg-surface shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ============================================================ */}
         {/* LEFT COLUMN: Conversation Threads List                       */}
         {/* ============================================================ */}
         <div
-          className={`w-full sm:w-[300px] border-r border-border bg-surface-2 flex flex-col shrink-0 ${
+          className={`w-full sm:w-[320px] border-r border-border bg-surface-2 flex flex-col shrink-0 ${
             activeDmBuilder ? 'hidden sm:flex' : 'flex'
           }`}
         >
           {/* Header */}
-          <div className="p-3.5 border-b border-border flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-accent" />
-              <h2 className="text-sm font-bold text-fg">1:1 다이렉트 메시지</h2>
+          <div className="p-3.5 border-b border-border flex items-center justify-between bg-surface-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <MessageSquare className="w-4 h-4 text-accent shrink-0" />
+              <h2 className="text-sm font-bold text-fg truncate">1:1 다이렉트 메시지</h2>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsSelectingNewBuilder((prev) => !prev)}
-              className="p-1 rounded-btn text-accent hover:bg-surface transition-colors"
-              title="새 대화 시작하기"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsSelectingNewBuilder((prev) => !prev)}
+                className={`p-1.5 rounded-btn transition-colors ${
+                  isSelectingNewBuilder
+                    ? 'bg-brand-subtle text-accent'
+                    : 'text-accent hover:bg-surface'
+                }`}
+                title={isSelectingNewBuilder ? '목록으로 돌아가기' : '새 대화 시작하기'}
+                aria-label="새 대화 시작하기"
+              >
+                <Plus className={`w-4 h-4 transition-transform duration-200 ${isSelectingNewBuilder ? 'rotate-45' : ''}`} />
+              </button>
+              <button
+                type="button"
+                onClick={handleClose}
+                className="p-1.5 rounded-btn text-fg-muted hover:bg-surface hover:text-fg transition-colors"
+                title="닫기"
+                aria-label="닫기"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Search Bar */}
@@ -259,21 +312,25 @@ export const DmInboxModal: React.FC<DmInboxModalProps> = ({ isOpen, onClose }) =
           {activeDmBuilder ? (
             <>
               {/* Chat Header */}
-              <div className="p-3.5 border-b border-border bg-surface-2 flex items-center justify-between">
-                <div className="flex items-center gap-3 min-w-0">
+              <div className="p-3 sm:p-3.5 border-b border-border bg-surface-2 flex items-center justify-between">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  {/* Mobile Back Button: clearly styled with Chevron and '목록' label */}
                   <button
                     type="button"
                     onClick={() => setActiveDmBuilder(null)}
-                    className="p-1.5 rounded-btn text-fg-muted hover:bg-surface hover:text-fg transition-colors sm:hidden"
+                    className="p-1.5 -ml-1 sm:hidden rounded-btn text-accent hover:bg-surface transition-colors shrink-0 flex items-center gap-0.5 font-bold text-xs"
+                    title="대화 목록으로 돌아가기"
+                    aria-label="대화 목록으로 돌아가기"
                   >
                     <ChevronLeft className="w-5 h-5" />
+                    <span>목록</span>
                   </button>
 
                   <div className="relative shrink-0">
                     <img
                       src={activeDmBuilder.avatar}
                       alt={activeDmBuilder.name}
-                      className="size-10 rounded-full object-cover ring-1 ring-border"
+                      className="size-9 sm:size-10 rounded-full object-cover ring-1 ring-border"
                     />
                     {activeDmBuilder.online && (
                       <span className="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-surface" />
@@ -281,12 +338,15 @@ export const DmInboxModal: React.FC<DmInboxModalProps> = ({ isOpen, onClose }) =
                   </div>
 
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <h3 className="text-sm font-bold text-fg truncate">
                         {activeDmBuilder.name}
                       </h3>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-subtle text-accent font-semibold shrink-0">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand-subtle text-accent font-semibold shrink-0">
                         {activeDmBuilder.role}
+                      </span>
+                      <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-pill border border-emerald-500/20">
+                        🔒 비공개
                       </span>
                     </div>
                     <p className="text-[11px] text-fg-muted truncate">
@@ -299,9 +359,10 @@ export const DmInboxModal: React.FC<DmInboxModalProps> = ({ isOpen, onClose }) =
 
                 <button
                   type="button"
-                  onClick={onClose}
-                  className="p-1.5 rounded-btn text-fg-muted hover:bg-surface hover:text-fg transition-colors shrink-0"
+                  onClick={handleClose}
+                  className="p-1.5 rounded-btn text-fg-muted hover:bg-surface hover:text-fg transition-colors shrink-0 ml-1"
                   title="닫기"
+                  aria-label="닫기"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -312,7 +373,7 @@ export const DmInboxModal: React.FC<DmInboxModalProps> = ({ isOpen, onClose }) =
                 {/* Intro bubble */}
                 <div className="text-center my-1">
                   <span className="inline-block text-[11px] text-fg-muted bg-surface-2 px-3 py-1 rounded-full border border-border">
-                    {activeDmBuilder.name}님과의 1:1 대화방입니다. 자유롭게 의견과 피드백을 나눠보세요.
+                    🔒 {activeDmBuilder.name}님과 나만 볼 수 있는 비공개 1:1 대화입니다
                   </span>
                 </div>
 

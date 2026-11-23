@@ -30,6 +30,7 @@ export const Leaderboard: React.FC = () => {
     user,
     setCurrentTab,
     setActiveDmBuilder,
+    openDmWithBuilder,
     showToast,
   } = useApp();
 
@@ -83,24 +84,20 @@ export const Leaderboard: React.FC = () => {
         (rankedUser.builderId && b.id === rankedUser.builderId) ||
         (rankedUser.email && b.email && b.email.toLowerCase() === rankedUser.email.toLowerCase())
     );
-    if (existingBuilder) {
-      setActiveDmBuilder(existingBuilder);
-    } else {
-      const tempBuilder: Builder = {
-        id: rankedUser.builderId || (rankedUser.email ? 'user-' + rankedUser.email : 'user-' + rankedUser.name),
-        name: rankedUser.name,
-        email: rankedUser.email,
-        avatar: rankedUser.avatar,
-        role: rankedUser.role || '인디 메이커',
-        bio: rankedUser.aiCommentary || 'demonst 리더보드 상위 메이커입니다.',
-        buildingApp: '',
-        tags: ['리더보드', '메이커'],
-        followersCount: 12,
-        followingCount: 5,
-        online: true,
-      };
-      setActiveDmBuilder(tempBuilder);
-    }
+    const targetBuilder: Builder = existingBuilder || {
+      id: rankedUser.builderId || (rankedUser.email ? 'user-' + rankedUser.email : 'user-' + rankedUser.name),
+      name: rankedUser.name,
+      email: rankedUser.email,
+      avatar: rankedUser.avatar,
+      role: rankedUser.role || '인디 메이커',
+      bio: rankedUser.aiCommentary || 'demonst 리더보드 상위 메이커입니다.',
+      buildingApp: '',
+      tags: ['리더보드', '메이커'],
+      followersCount: 12,
+      followingCount: 5,
+      online: true,
+    };
+    openDmWithBuilder(targetBuilder);
   };
 
   const top3 = rankedUsers.slice(0, 3);

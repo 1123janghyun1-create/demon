@@ -1,7 +1,8 @@
 import React from 'react';
-import { Menu, Search, Quote as QuoteIcon, LogIn, LogOut, Edit3, MessageSquare } from 'lucide-react';
+import { Menu, Search, Quote as QuoteIcon, LogIn, LogOut, Edit3, MessageSquare, Bell } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { GoogleTranslate } from './GoogleTranslate';
+import { NotificationDropdown } from './NotificationDropdown';
 
 interface HeaderProps {
   onOpenMobileMenu: () => void;
@@ -19,6 +20,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
     requireAuth,
     setIsDmInboxOpen,
     unreadDmCount,
+    isNotificationOpen,
+    setIsNotificationOpen,
+    unreadNotificationCount,
   } = useApp();
 
   return (
@@ -71,6 +75,28 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
             <span className="font-semibold text-fg">“{currentQuote.text}”</span>
             <span className="text-fg-muted ml-1.5">— {currentQuote.author}</span>
           </p>
+        </div>
+
+        {/* Notification Bell Button (Platform Activities & Targeted Alerts) */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+            className="relative rounded-full p-2 text-fg-secondary hover:bg-surface-2 hover:text-fg transition-colors cursor-pointer shrink-0"
+            title="알림 및 최근 활동"
+            aria-label="알림 열기"
+          >
+            <Bell className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+            {unreadNotificationCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-surface animate-pulse">
+                {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+              </span>
+            )}
+          </button>
+          <NotificationDropdown
+            isOpen={isNotificationOpen}
+            onClose={() => setIsNotificationOpen(false)}
+          />
         </div>
 
         {/* 1:1 Direct Message (DM) Inbox Button (Exclusive DM Notification Hub) */}

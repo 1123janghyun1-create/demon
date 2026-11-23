@@ -117,7 +117,10 @@ export const AppContent: React.FC = () => {
       {/* 1:1 Direct Message Inbox & Messenger Modal */}
       <DmInboxModal
         isOpen={isDmInboxOpen}
-        onClose={() => setIsDmInboxOpen(false)}
+        onClose={() => {
+          setIsDmInboxOpen(false);
+          setActiveDmBuilder(null);
+        }}
       />
 
       {/* 1:1 Direct Message Single Pop-up Modal (when inbox is not open) */}

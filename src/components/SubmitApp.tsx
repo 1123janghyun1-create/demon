@@ -38,6 +38,7 @@ import { fetchWebsiteMetadata, ExtractedMetadata } from '../lib/metadataFetcher'
 import { uploadToCloudinary } from '../lib/cloudinary';
 import { ImageUploader } from './ImageUploader';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { ProductLogo } from './ProductLogo';
 
 interface AdditionalLinkItem {
   id: string;
@@ -1140,20 +1141,12 @@ export const SubmitApp: React.FC = () => {
                   <span>✦ 홈에서 이렇게 보여요.</span>
                 </div>
                 <div className="rounded-card border border-border bg-surface-2 p-3 flex items-center gap-3 max-w-[380px]">
-                  <div className="size-11 rounded-[12px] bg-surface ring-1 ring-border/80 overflow-hidden flex items-center justify-center shrink-0">
-                    {iconUrl ? (
-                      <img
-                        src={iconUrl}
-                        alt="썸네일"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <img src="/demon-mascot.png" alt="demonst" className="w-6 h-6 object-contain" />
-                    )}
-                  </div>
+                  <ProductLogo
+                    src={iconUrl}
+                    title={title || '앱'}
+                    url={url}
+                    sizeClass="size-11"
+                  />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold text-fg truncate">
                       {title ? `1. ${title}` : '1. 제품 이름'}

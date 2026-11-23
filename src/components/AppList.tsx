@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { MessageSquare, ExternalLink, Sparkles, PlusCircle, Eye, ChevronUp, Rocket, Clock } from 'lucide-react';
 import { useApp } from '../AppContext';
 import { Product } from '../types';
+import { ProductLogo } from './ProductLogo';
 
 export const AppList: React.FC = () => {
   const {
@@ -136,22 +137,16 @@ export const AppList: React.FC = () => {
               >
                 {/* Top / Left: Icon + Info */}
                 <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
-                  <div className="relative size-12 sm:size-14 shrink-0 overflow-hidden rounded-[13px] sm:rounded-[15px] bg-surface-2 ring-1 ring-inset ring-border/60">
-                    <img
+                  <div className="relative shrink-0">
+                    <ProductLogo
                       src={product.icon}
-                      alt={`${product.title} 로고`}
-                      loading="lazy"
-                      onError={(e) => {
-                        (e.target as HTMLElement).style.display = 'none';
-                      }}
-                      className="h-full w-full object-cover"
+                      title={product.title}
+                      url={product.url}
+                      sizeClass="size-12 sm:size-14"
                     />
-                    <div className="absolute inset-0 -z-10 flex items-center justify-center font-bold text-fg-muted text-base sm:text-lg bg-surface-2">
-                      {product.title.slice(0, 1)}
-                    </div>
                     {isBumpedRecently && (
                       <span
-                        className="absolute -top-1.5 -right-1.5 size-4 rounded-full bg-accent text-[9px] text-white flex items-center justify-center shadow-xs"
+                        className="absolute -top-1.5 -right-1.5 size-4 rounded-full bg-accent text-[9px] text-white flex items-center justify-center shadow-xs z-10"
                         title="최근 상단으로 끌어올려진 앱"
                       >
                         🚀

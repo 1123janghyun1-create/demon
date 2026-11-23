@@ -88,15 +88,27 @@ function cleanTagline(subtitle: string, rawDesc: string): string {
   return '';
 }
 
-function extractDynamicFeatures(title: string, rawDesc: string, category: string): string[] {
+const HEADING_BLACKLIST =
+  /^(pages|page|home|menu|navigation|nav|header|footer|links|login|sign\s*in|sign\s*up|auth|search|close|open|dashboard|profile|settings|sidebar|content|container|wrapper|layout|untitled|view|button|item|\d+|privacy|terms|cookie|legal|copyright|all rights reserved|notion|disquiet|product hunt)$/i;
+
+function extractDynamicFeatures(title: string, rawDesc: string, category: string, seoKeywords: string[] = []): string[] {
   const candidates: string[] = [];
-  const navBlacklist = /^(로그인|회원가입|홈|메뉴|공지|푸터|이용약관|개인정보|문의하기|login|sign in|home|menu|footer|terms|privacy)$/i;
+
+  // Add relevant SEO keywords as high-confidence feature hints
+  if (seoKeywords && seoKeywords.length > 0) {
+    seoKeywords.forEach((k) => {
+      const cleanK = k.trim();
+      if (cleanK.length >= 2 && cleanK.length <= 30 && !HEADING_BLACKLIST.test(cleanK)) {
+        candidates.push(cleanK);
+      }
+    });
+  }
 
   if (rawDesc) {
     const parts = rawDesc
       .split(/[,·\n\r•|/]+/)
       .map((s) => s.trim())
-      .filter((s) => s.length >= 4 && s.length <= 70 && !navBlacklist.test(s));
+      .filter((s) => s.length >= 3 && s.length <= 70 && !HEADING_BLACKLIST.test(s));
     candidates.push(...parts);
   }
 
@@ -104,7 +116,7 @@ function extractDynamicFeatures(title: string, rawDesc: string, category: string
   const seen = new Set<string>();
   for (const c of candidates) {
     const norm = c.toLowerCase().replace(/[^a-z0-9가-힣]/g, '');
-    if (norm.length >= 3 && !seen.has(norm)) {
+    if (norm.length >= 2 && !seen.has(norm)) {
       seen.add(norm);
       unique.push(c);
       if (unique.length >= 6) break;
@@ -119,12 +131,13 @@ function generateDetailedMarkdown(
   tagline: string,
   rawDesc: string,
   category: string,
-  domain: string
+  domain: string,
+  seoKeywords: string[] = []
 ): string {
   const cleanTitle = title || domain;
   const cleanDesc = decodeHtmlEntities(rawDesc).trim();
   const cleanTaglineText = decodeHtmlEntities(tagline).trim();
-  const dynamicFeatures = extractDynamicFeatures(cleanTitle, cleanDesc, category);
+  const dynamicFeatures = extractDynamicFeatures(cleanTitle, cleanDesc, category, seoKeywords);
 
   let md = '';
 
@@ -137,16 +150,22 @@ function generateDetailedMarkdown(
     md += `**${cleanTitle}**은(는) ${domain} 도메인을 기반으로 사용자에게 직관적이고 실용적인 경험을 제공하는 웹 애플리케이션입니다.\n\n`;
   }
 
-  md += `복잡한 절차와 정보 파편화를 줄이고 웹 브라우저에서 누구나 빠르고 쾌적하게 핵심 목적을 실현할 수 있도록 정밀하게 개발되었습니다.\n\n`;
+  if (seoKeywords && seoKeywords.length > 0) {
+    md += `### 🎯 공식 사이트 SEO 키워드 및 검색 포지셔닝\n`;
+    md += `- **메이커 지정 타겟 키워드**: ${seoKeywords.slice(0, 10).map((k) => `\`#${k.trim()}\``).join(' ')}\n`;
+    md += `- **검색 포지셔닝**: ${cleanTitle}은(는) 검색 엔진 및 타겟 사용자가 자주 찾는 핵심 테마("${seoKeywords.slice(0, 4).join(', ')}")에 최적화된 웹 경험을 제공합니다.\n\n`;
+  }
 
-  md += `### ✨ 사이트 분석 기반 주요 핵심 기능 & 시스템\n`;
+  md += `### ✨ 사이트 분석 기반 주요 핵심 기능\n`;
   if (dynamicFeatures.length > 0) {
     dynamicFeatures.forEach((feat, idx) => {
-      let desc = '실시간 인터랙티브 데이터 처리와 최적화된 워크플로우를 통해 사용자가 원하는 핵심 가치를 지체 없이 실현합니다.';
+      let desc = '핵심 목적을 빠르게 달성할 수 있도록 직관적이고 최적화된 웹 인터페이스를 제공합니다.';
       if (/코인|선물|투자|차트|펀딩|거래소|셀퍼럴|페이백|크립토/i.test(feat + ' ' + cleanDesc)) {
         desc = '실시간 시장 동향과 펀딩 비율 등 핵심 데이터를 면밀히 집계하여 최적의 의사결정과 혜택을 지원합니다.';
       } else if (/ai|gpt|프롬프트|생성형|llm/i.test(feat + ' ' + cleanDesc)) {
         desc = '인공지능 모델을 활용하여 번거로운 수작업 단계를 줄이고 고품질 결과물을 실시간으로 생성합니다.';
+      } else if (/학교|학생|시간표|급식|교육/i.test(feat + ' ' + cleanDesc)) {
+        desc = '학생과 교육 관련 이용자가 매일 필요한 일정과 학사 정보를 한눈에 확인할 수 있도록 돕습니다.';
       }
       md += `${idx + 1}. **${feat}**: ${desc}\n`;
     });
@@ -157,27 +176,13 @@ function generateDetailedMarkdown(
   }
   md += `\n`;
 
-  md += `### 🚀 실전 워크플로우 & 주요 활용 시나리오\n`;
-  md += `- **1단계: 진입 및 온보딩**: ${domain}에 접속하여 서비스가 제공하는 핵심 기능과 사용자 혜택을 한눈에 파악합니다.\n`;
-  md += `- **2단계: 작업 실행 및 탐색**: 직관적인 메뉴 구성을 따라 필요한 정보 조회 및 작업을 지체 없이 진행합니다.\n`;
-  md += `- **3단계: 피드백 및 확장**: 도출된 인사이트나 결과물을 동료들과 공유하고 지속적인 사용 루틴을 정착합니다.\n\n`;
-
-  md += `### 🎯 최적 타겟 고객군 & 추천 대상\n`;
-  if (/코인|선물|투자|crypto|trade/i.test(cleanDesc + ' ' + cleanTitle)) {
-    md += `- 실시간 시장 시황과 펀딩비, 매매일지를 편리하게 관리하고 싶은 가상자산/선물 트레이더\n`;
-    md += `- 거래소 수수료 부담을 낮추고 페이백 혜택을 확인하고자 하는 스마트한 투자자\n\n`;
-  } else if (/ai|gpt|프롬프트/i.test(cleanDesc + ' ' + cleanTitle)) {
-    md += `- 최신 AI 툴을 실무에 즉시 도입하여 작업 생산성을 극대화하고 싶은 메이커 및 얼리어답터\n`;
-    md += `- 복잡한 설정 없이도 뛰어난 AI 분석 결과를 간편하게 얻고자 하는 사용자\n\n`;
-  } else {
-    md += `- 군더더기 없는 심플한 웹 도구와 빠른 반응 속도를 선호하는 사용자\n`;
-    md += `- 일상이나 업무 프로세스를 한층 더 스마트하게 개선하고 싶은 생산성 지향 메이커\n\n`;
-  }
-
   md += `### 🔍 테스터를 위한 집중 피드백 요청 포인트\n`;
   md += `- **[첫인상 및 직관성]**: 랜딩 페이지 진입 시 서비스의 핵심 가치와 사용 방법이 명확하게 이해되는지\n`;
   md += `- **[UI/UX 사용 편의성]**: 모바일 및 데스크톱 환경에서의 버튼 반응성, 폰트 가독성, 메뉴 탐색의 쾌적함\n`;
   md += `- **[기능 완성도 및 안정성]**: 실제 조작 과정에서 버그나 로딩 지연 현상이 발생하지 않는지\n`;
+  if (seoKeywords && seoKeywords.length > 0) {
+    md += `- **[SEO 키워드 부합성]**: 메이커가 타겟팅한 핵심 키워드(${seoKeywords.slice(0, 3).join(', ')})가 실사용 경험에 효과적으로 체감되는지\n`;
+  }
   md += `- **[개선 아이디어]**: 실사용자 관점에서 추가되었으면 하는 기능이나 개선 제안`;
 
   return md.trim();

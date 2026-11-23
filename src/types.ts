@@ -62,6 +62,28 @@ export interface Feedback {
   replies?: FeedbackReply[];
 }
 
+export interface ProductComment {
+  id: string;
+  productId: string;
+  author: string;
+  authorId?: string;
+  authorEmail?: string;
+  avatar: string;
+  content: string;
+  createdAt: string;
+  likes: number;
+  userLiked?: boolean;
+}
+
+export interface ProductTimelineEvent {
+  id: string;
+  productId: string;
+  type: 'launch' | 'bump' | 'milestone' | 'update';
+  title: string;
+  description: string;
+  date: string;
+}
+
 export interface CommunityPost {
   id: string;
   author: string;
@@ -160,7 +182,7 @@ export interface DirectMessage {
   read?: boolean;
 }
 
-export type NotificationType = 'dm' | 'upvote' | 'feedback' | 'system';
+export type NotificationType = 'dm' | 'upvote' | 'feedback' | 'system' | 'community';
 
 export interface AppNotification {
   id: string;
@@ -169,6 +191,7 @@ export interface AppNotification {
   message: string;
   createdAt: string;
   read: boolean;
+  userId?: string;
   senderName?: string;
   senderAvatar?: string;
   productId?: string;
