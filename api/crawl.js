@@ -465,10 +465,14 @@ function synthesizeUltraDetailedReport({
   techStack,
   socialLinks,
   jsonLdInfos,
+  seoKeywords = [],
 }) {
   const cleanTitle = title || domain;
   const cleanDesc = decodeHtmlEntities(rawDesc || '').trim();
   const allPages = [mainParsed, ...subpageResults, ...externalSiteResults].filter(Boolean);
+
+  // Blacklist generic navigation / template headings (e.g. "Pages", "Home", "Menu")
+  const HEADING_BLACKLIST = /^(pages|page|home|menu|navigation|nav|header|footer|links|login|sign\s*in|sign\s*up|auth|search|close|open|dashboard|profile|settings|sidebar|content|container|wrapper|layout|untitled|view|button|item|\d+|privacy|terms|cookie|legal|copyright|all rights reserved|notion|disquiet|product hunt)$/i;
 
   // Deduplication helper
   const usedNorms = new Set();
@@ -515,7 +519,16 @@ function synthesizeUltraDetailedReport({
   }
 
   // =========================================================
-  // SECTION 2: ✨ 실제 페이지 분석 기반 핵심 기능 및 상세 구성
+  // SECTION 2: 🎯 공식 SEO 키워드 및 포지셔닝 (사이트 SEO 분석)
+  // =========================================================
+  if (seoKeywords && seoKeywords.length > 0) {
+    md += `### 🎯 공식 사이트 SEO 키워드 및 검색 포지셔닝\n`;
+    md += `- **메이커 지정 타겟 키워드**: ${seoKeywords.slice(0, 15).map((k) => `\`#${k}\``).join(' ')}\n`;
+    md += `- **핵심 검색 타겟**: "${seoKeywords.slice(0, 5).join(', ')}" 관련 사용자 및 수요층을 겨냥하여 핵심 가치를 웹에서 바로 제공합니다.\n\n`;
+  }
+
+  // =========================================================
+  // SECTION 3: ✨ 실제 페이지 분석 기반 핵심 기능 및 상세 구성
   // =========================================================
   md += `### ✨ 실제 사이트 심층 분석 — 핵심 기능 및 상세 구성\n`;
 
@@ -526,6 +539,7 @@ function synthesizeUltraDetailedReport({
       const h = (sec.heading || '').trim();
       if (!isUsefulText(h, 3) || h.toLowerCase() === cleanTitle.toLowerCase()) continue;
       if (h.includes(cleanTitle) && h.includes('—')) continue;
+      if (HEADING_BLACKLIST.test(h)) continue;
       if (!takeUnique(h)) continue;
 
       const bodyParts = [];
@@ -541,9 +555,9 @@ function synthesizeUltraDetailedReport({
       if (bodyParts.length > 0) {
         richFeatures.push({ heading: h, details: bodyParts, source: page.title || page.url });
       }
-      if (richFeatures.length >= 12) break;
+      if (richFeatures.length >= 10) break;
     }
-    if (richFeatures.length >= 12) break;
+    if (richFeatures.length >= 10) break;
   }
 
   if (richFeatures.length > 0) {
@@ -561,7 +575,7 @@ function synthesizeUltraDetailedReport({
     const allBullets = [];
     for (const page of allPages) {
       for (const b of [...(page.bullets || []), ...(page.headings || [])]) {
-        if (isUsefulText(b, 6) && takeUnique(b)) {
+        if (isUsefulText(b, 6) && !HEADING_BLACKLIST.test(b) && takeUnique(b)) {
           allBullets.push(b);
           if (allBullets.length >= 8) break;
         }
@@ -579,7 +593,7 @@ function synthesizeUltraDetailedReport({
   }
 
   // =========================================================
-  // SECTION 3: 🗺️ 멀티 페이지 & 외부 사이트 탐색 리포트
+  // SECTION 4: 🗺️ 프로젝트 내부 경로(Internal Paths) 크롤링 리포트
   // =========================================================
   const visitedSummaries = [];
   for (const sub of subpageResults) {
@@ -590,12 +604,12 @@ function synthesizeUltraDetailedReport({
         return sub.url;
       }
     })();
-    const keyPoints = [...(sub.headings || []).slice(0, 3), ...(sub.paragraphs || []).slice(0, 1)]
-      .filter((x) => isUsefulText(x, 4))
+    const keyPoints = [...(sub.headings || []).slice(0, 3), ...(sub.paragraphs || []).slice(0, 2)]
+      .filter((x) => isUsefulText(x, 4) && !HEADING_BLACKLIST.test(x))
       .slice(0, 3);
     visitedSummaries.push({
       label: `${sub.title || pathLabel} (\`${pathLabel}\`)`,
-      summary: keyPoints.length > 0 ? keyPoints.join(' · ') : '세부 콘텐츠 및 페이지 구성 확인 완료',
+      summary: keyPoints.length > 0 ? keyPoints.join(' · ') : '페이지 구성 및 세부 컨텐츠 확인 완료',
     });
   }
 
@@ -622,41 +636,10 @@ function synthesizeUltraDetailedReport({
     });
   }
 
-  for (const wm of webMentions) {
-    if (takeUnique(wm.snippet)) {
-      visitedSummaries.push({
-        label: `외부 웹 레퍼런스 — ${wm.title}`,
-        summary: wm.snippet,
-      });
-    }
-  }
-
   if (visitedSummaries.length > 0) {
-    md += `### 🗺️ 여러 페이지 및 외부 사이트 탐색 리포트\n`;
+    md += `### 🗺️ 프로젝트 내부 경로(Internal Paths)별 심층 분석\n`;
     visitedSummaries.slice(0, 8).forEach((item) => {
       md += `- **${item.label}**: ${item.summary}\n`;
-    });
-    md += `\n`;
-  }
-
-  // =========================================================
-  // SECTION 4: 🚀 사이트 실제 메뉴 구조 & 활용 포인트
-  // =========================================================
-  const realBulletsExtra = [];
-  for (const page of allPages) {
-    for (const b of page.bullets || []) {
-      if (b.length >= 10 && takeUnique(b)) {
-        realBulletsExtra.push(b);
-        if (realBulletsExtra.length >= 6) break;
-      }
-    }
-    if (realBulletsExtra.length >= 6) break;
-  }
-
-  if (realBulletsExtra.length > 0) {
-    md += `### 🚀 세부 기능 및 실전 활용 포인트\n`;
-    realBulletsExtra.forEach((item) => {
-      md += `- ${item}\n`;
     });
     md += `\n`;
   }
@@ -685,46 +668,34 @@ function synthesizeUltraDetailedReport({
   }
 
   // =========================================================
-  // SECTION 6: ❓ 사이트 내 추출된 FAQ (실제 존재할 때만 출력)
-  // =========================================================
-  const allFaqs = allPages.flatMap((p) => p.faqItems || []).slice(0, 4);
-  if (allFaqs.length > 0) {
-    md += `### ❓ 사이트 내 주요 질문 & 안내 (FAQ)\n`;
-    allFaqs.forEach((f) => {
-      md += `- **${f.q}**\n  ${f.a}\n`;
-    });
-    md += `\n`;
-  }
-
-  // =========================================================
-  // SECTION 7: 🔍 베타 테스터를 위한 맞춤형 집중 피드백 포인트
+  // SECTION 6: 🔍 베타 테스터 집중 점검 포인트 (SEO & 실사용 경로 검증)
   // =========================================================
   md += `### 🔍 베타 테스터 집중 점검 포인트\n`;
-  const qaTargets = richFeatures.slice(0, 3).map((f) => f.heading);
-  if (qaTargets.length > 0) {
-    qaTargets.forEach((featName) => {
-      md += `- **['${featName.slice(0, 35)}' 기능 실사용 검증]**: 해당 기능이 안내된 내용대로 오류 없이 매끄럽게 동작하고 원하는 결과를 제공하는지\n`;
+  if (richFeatures.length > 0) {
+    richFeatures.slice(0, 3).forEach((feat) => {
+      md += `- **['${feat.heading}' 실사용 검증]**: ${feat.details[0] || '해당 핵심 기능이 안내된 내용대로 오류 없이 매끄럽게 동작하고 원하는 결과를 제공하는지'}\n`;
     });
   } else {
     md += `- **[핵심 온보딩 경험]**: \`${domain}\` 첫 접속 시 서비스 목적과 사용 방법이 별도 설명 없이 바로 이해되는지\n`;
   }
   if (subpageResults.length > 0) {
-    const subPaths = subpageResults
-      .map((s) => {
-        try {
-          return new URL(s.url).pathname;
-        } catch {
-          return '';
+    subpageResults.slice(0, 3).forEach((s) => {
+      try {
+        const u = new URL(s.url);
+        const pathName = u.pathname;
+        if (pathName && pathName !== '/') {
+          md += `- **[내부 경로 점검: \`${pathName}\` (${s.title || '서브페이지'})]**: 해당 화면 이동 시 로딩 속도, 데이터 렌더링 및 UI 배치가 쾌적한지\n`;
         }
-      })
-      .filter(Boolean)
-      .slice(0, 3)
-      .join(', ');
-    if (subPaths) {
-      md += `- **[서브페이지 동선 점검 (${subPaths})]**: 메인 화면에서 세부 페이지로 이동하는 흐름과 반응 속도가 자연스러운지\n`;
+      } catch {}
+    });
+  }
+  if (seoKeywords && seoKeywords.length > 0) {
+    const topKeywords = seoKeywords.slice(0, 4).map((k) => k.trim()).filter(Boolean);
+    if (topKeywords.length > 0) {
+      md += `- **[사이트 SEO 타겟 부합성 (${topKeywords.join(', ')})]**: 메이커가 의도한 핵심 키워드의 기능과 효용이 실제 사용자 경험에서 매끄럽게 전달되는지\n`;
     }
   }
-  md += `- **[PC·모바일 UI 및 개선 제안]**: 데스크톱과 모바일 브라우저 모두에서 레이아웃 깨짐이 없는지, 추가로 있었으면 하는 기능 아이디어`;
+  md += `- **[모바일·PC UI 반응형 검증]**: 기기 해상도별 레이아웃 깨짐이 없는지 및 실사용자 관점에서의 개선 아이디어`;
 
   return md.trim();
 }
@@ -851,6 +822,20 @@ export default async function handler(req, res) {
     }
     if (!rawDesc && microlinkData?.description) rawDesc = microlinkData.description;
 
+    // Extract site's actual SEO keywords from <meta name="keywords">
+    let seoKeywords = [];
+    if (rawHtml) {
+      const keywordsMatch =
+        rawHtml.match(/<meta[^>]+name=["']keywords["'][^>]+content=["']([^"']+)["']/i) ||
+        rawHtml.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']keywords["']/i);
+      if (keywordsMatch?.[1]) {
+        seoKeywords = keywordsMatch[1]
+          .split(/[,·|]+/)
+          .map((k) => decodeHtmlEntities(k).trim())
+          .filter((k) => k.length >= 2 && k.length <= 40);
+      }
+    }
+
     // Parse JSON-LD structured data if present in raw HTML
     const jsonLdInfos = [];
     if (rawHtml) {
@@ -880,7 +865,9 @@ export default async function handler(req, res) {
     const htmlLinks = [];
     const discoveredImages = [];
     if (rawHtml) {
-      const iconMatch = rawHtml.match(/<link[^>]+rel=["'](?:apple-touch-icon|icon|shortcut icon)["'][^>]+href=["']([^"']+)["']/i);
+      const iconMatch =
+        rawHtml.match(/<link[^>]+rel=["'](?:apple-touch-icon|icon|shortcut icon)["'][^>]+href=["']([^"']+)["']/i) ||
+        rawHtml.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:apple-touch-icon|icon|shortcut icon)["']/i);
       if (iconMatch?.[1]) result.logoUrl = resolveUrl(iconMatch[1], cleanUrl);
 
       const ogImgMatch =
@@ -1070,11 +1057,17 @@ export default async function handler(req, res) {
       techStack,
       socialLinks: result.socialLinks,
       jsonLdInfos,
+      seoKeywords,
     });
     result.instructions = result.description;
 
     // Extract Relevant Tags
     const tagPool = [result.category];
+    if (seoKeywords && seoKeywords.length > 0) {
+      seoKeywords.slice(0, 4).forEach((k) => {
+        if (k && k.length >= 2 && k.length <= 15) tagPool.push(k);
+      });
+    }
     if (/코인|비트코인|선물|투자|crypto/i.test(inferCorpus)) tagPool.push('크립토', '핀테크', '트레이딩');
     if (/ai|gpt|llm|프롬프트|인공지능/i.test(inferCorpus)) tagPool.push('AI', '생성형AI', '자동화');
     if (/개발자|code|api|github|오픈소스/i.test(inferCorpus)) tagPool.push('개발자도구', '오픈소스');

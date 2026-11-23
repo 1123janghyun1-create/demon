@@ -13,6 +13,7 @@ let memoryCache = {
   community: [],
   messages: {},
   notifications: [],
+  accounts: {},
 };
 
 const FILE_MAP = {
@@ -20,6 +21,9 @@ const FILE_MAP = {
   builders: 'builders_data.json',
   feedbacks: 'feedbacks_data.json',
   community: 'community_data.json',
+  accounts: 'accounts_data.json',
+  notifications: 'notifications_data.json',
+  messages: 'messages_data.json',
 };
 
 function getFilePath(tableName) {
@@ -105,6 +109,43 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, data: readData('community', []) });
       }
 
+      // DM: Only participants (sender/receiver) can view their messages
+      if (table === 'messages') {
+        const { userId, email } = req.query || {};
+        if (!userId && !email) {
+          return res.status(200).json({ success: true, data: [] });
+        }
+        const cleanId = (userId || '').trim();
+        const cleanEmail = (email || '').trim().toLowerCase();
+        const allMsgs = readData('messages', []);
+        const filtered = allMsgs.filter((m) => {
+          if (m.senderId === 'SYSTEM_AUTH' || m.senderId === 'DELETED') return false;
+          const isSender =
+            (cleanId && m.senderId === cleanId) ||
+            (cleanEmail && (m.senderId || '').toLowerCase() === cleanEmail);
+          const isReceiver =
+            (cleanId && m.receiverId === cleanId) ||
+            (cleanEmail && (m.receiverId || '').toLowerCase() === cleanEmail);
+          return isSender || isReceiver;
+        });
+        return res.status(200).json({ success: true, data: filtered });
+      }
+
+      // Notifications: returns targeted notifications for user + global platform activities
+      if (table === 'notifications') {
+        const { userId, email } = req.query || {};
+        const cleanId = (userId || '').trim();
+        const cleanEmail = (email || '').trim().toLowerCase();
+        const allNotifs = readData('notifications', []);
+        const filtered = allNotifs.filter((n) => {
+          if (!n.userId || n.userId === 'ALL') return true;
+          if (cleanId && n.userId === cleanId) return true;
+          if (cleanEmail && (n.userId || '').toLowerCase() === cleanEmail) return true;
+          return false;
+        });
+        return res.status(200).json({ success: true, data: filtered });
+      }
+
       return res.status(400).json({ success: false, message: 'Invalid table requested' });
     }
 
@@ -162,7 +203,7 @@ export default async function handler(req, res) {
         }
 
         if (action === 'delete') {
-          list = list.filter((p) => p.id !== data.id);
+          list = list.filter((p) => p.id !== data.id && p.slug !== data.id && (!data.slug || p.slug !== data.slug));
           writeData('products', list);
           return res.status(200).json({ success: true, data: list });
         }
@@ -273,6 +314,162 @@ export default async function handler(req, res) {
           msgList.push(data);
           writeData('messages', msgList);
           return res.status(200).json({ success: true, data });
+        }
+      }
+
+      if (table === 'notifications') {
+        let notifList = readData('notifications', []);
+
+        if (action === 'insert') {
+          notifList = [data, ...notifList].slice(0, 200);
+          writeData('notifications', notifList);
+          return res.status(200).json({ success: true, data });
+        }
+
+        if (action === 'mark_read') {
+          notifList = notifList.map((n) => (n.id === data.id ? { ...n, read: true } : n));
+          writeData('notifications', notifList);
+          return res.status(200).json({ success: true, data: notifList });
+        }
+
+        if (action === 'mark_all_read') {
+          const { userId, email } = data || {};
+          const cleanId = (userId || '').trim();
+          const cleanEmail = (email || '').trim().toLowerCase();
+          notifList = notifList.map((n) => {
+            const matches =
+              (cleanId && n.userId === cleanId) ||
+              (cleanEmail && (n.userId || '').toLowerCase() === cleanEmail) ||
+              !n.userId;
+            return matches ? { ...n, read: true } : n;
+          });
+          writeData('notifications', notifList);
+          return res.status(200).json({ success: true, data: notifList });
+        }
+
+        if (action === 'delete') {
+          notifList = notifList.filter((n) => n.id !== data.id);
+          writeData('notifications', notifList);
+          return res.status(200).json({ success: true, data: notifList });
+        }
+
+        if (action === 'clear_all') {
+          const { userId, email } = data || {};
+          const cleanId = (userId || '').trim();
+          const cleanEmail = (email || '').trim().toLowerCase();
+          notifList = notifList.filter((n) => {
+            const matches =
+              (cleanId && n.userId === cleanId) ||
+              (cleanEmail && (n.userId || '').toLowerCase() === cleanEmail);
+            return !matches;
+          });
+          writeData('notifications', notifList);
+          return res.status(200).json({ success: true, data: notifList });
+        }
+      }
+
+      if (table === 'accounts') {
+        let accountsMap = readData('accounts', {});
+        const email = (data?.email || '').trim().toLowerCase();
+
+        if (action === 'register') {
+          if (!email) {
+            return res.status(400).json({ success: false, message: '이메일을 입력해주세요.' });
+          }
+          if (accountsMap[email]) {
+            return res.status(400).json({
+              success: false,
+              alreadyExists: true,
+              message: '이미 가입된 이메일 계정입니다. 설정하셨던 비밀번호로 로그인해주세요.',
+            });
+          }
+
+          const newAccount = {
+            id: data.id || 'builder-' + Date.now(),
+            email,
+            password: data.password,
+            name: data.name || email.split('@')[0],
+            avatar: data.avatar || '/demon-mascot.png',
+            role: data.role || '인디 메이커',
+            createdAt: new Date().toISOString(),
+          };
+
+          accountsMap[email] = newAccount;
+          writeData('accounts', accountsMap);
+
+          // Also ensure registered in builders list
+          let bList = readData('builders', []);
+          const bIdx = bList.findIndex((b) => b.email === email);
+          if (bIdx === -1) {
+            bList.push({
+              id: newAccount.id,
+              name: newAccount.name,
+              email: newAccount.email,
+              avatar: newAccount.avatar,
+              role: newAccount.role,
+              bio: 'demonst 사이드 프로젝트 메이커입니다.',
+              tags: ['개발자', 'SaaS', 'AI'],
+              followersCount: 0,
+              followingCount: 0,
+            });
+            writeData('builders', bList);
+          }
+
+          return res.status(200).json({
+            success: true,
+            user: {
+              id: newAccount.id,
+              email: newAccount.email,
+              name: newAccount.name,
+              avatar: newAccount.avatar,
+              role: newAccount.role,
+            },
+          });
+        }
+
+        if (action === 'verify') {
+          if (!email) {
+            return res.status(400).json({ success: false, message: '이메일을 입력해주세요.' });
+          }
+
+          const existing = accountsMap[email];
+          if (!existing) {
+            return res.status(404).json({
+              success: false,
+              notFound: true,
+              message: '등록되지 않은 이메일 계정입니다. 회원가입을 먼저 진행해주세요.',
+            });
+          }
+
+          if (existing.password !== data.password) {
+            return res.status(401).json({
+              success: false,
+              wrongPassword: true,
+              message: '비밀번호가 일치하지 않습니다. 해당 계정에 설정하셨던 실제 비밀번호를 다시 확인해주세요.',
+            });
+          }
+
+          return res.status(200).json({
+            success: true,
+            user: {
+              id: existing.id,
+              email: existing.email,
+              name: existing.name,
+              avatar: existing.avatar,
+              role: existing.role,
+            },
+          });
+        }
+
+        if (action === 'get') {
+          const existing = accountsMap[email];
+          return res.status(200).json({
+            success: true,
+            exists: Boolean(existing),
+            user: existing
+              ? { id: existing.id, email: existing.email, name: existing.name, avatar: existing.avatar, role: existing.role }
+              : null,
+          });
         }
       }
 

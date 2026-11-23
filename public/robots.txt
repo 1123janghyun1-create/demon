@@ -47,6 +47,7 @@ Allow: /
 User-agent: PerplexityBot
 Allow: /
 
-# Sitemaps (Pages + Dedicated Google Image Sitemap)
+# Sitemaps (Pages + Dedicated Google Image Sitemap + RSS Feed)
 Sitemap: https://demonst.vercel.app/sitemap.xml
 Sitemap: https://demonst.vercel.app/image-sitemap.xml
+Sitemap: https://demonst.vercel.app/feed.xml

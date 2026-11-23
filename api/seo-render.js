@@ -457,7 +457,7 @@ export default async function handler(req, res) {
   <meta name="description" content="${esc(pageDesc)}" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
   <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-  <meta name="google-site-verification" content="r1Y7w1J-0n0q46J4f5y9z5F-sK1H2u8xQ8_h5j6k7l8" />
+  <meta name="google-site-verification" content="iZ6VZNowD0Vd0tA5xgO_Djd5W5j0domZLYzSkZ4ZN84" />
   <link rel="canonical" href="${esc(canonicalUrl)}" />
   <link rel="alternate" type="application/rss+xml" title="demonst 최신 사이드 프로젝트 피드" href="${SITE_URL}/feed.xml" />
   <link rel="sitemap" type="application/xml" title="Sitemap" href="${SITE_URL}/sitemap.xml" />

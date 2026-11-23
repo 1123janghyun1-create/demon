@@ -9,16 +9,26 @@
     <image:image><image:loc>https://demonst.vercel.app/icon-512.png</image:loc><image:title>demonst 아이콘 512px</image:title></image:image>
   </url>
   <url>
-    <loc>https://demonst.vercel.app/?product=app-1794915128902</loc>
+    <loc>https://demonst.vercel.app/?product=app-1794438607026</loc>
     <image:image>
-      <image:loc>https://cozit.app/opengraph-image?f62f20ded988df22</image:loc>
-      <image:title>Cozit 대표 스크린샷</image:title>
-      <image:caption>Meet users. Build together.</image:caption>
+      <image:loc>https://demonst.vercel.app/demon-mascot.png</image:loc>
+      <image:title>demonst 대표 스크린샷</image:title>
+      <image:caption>인디 메이커 앱 테스트 &amp; 런치패드</image:caption>
     </image:image>
     <image:image>
-      <image:loc>https://cozit.app/favicon.ico?favicon.2o7utyby3rtrj.ico</image:loc>
-      <image:title>Cozit 로고 아이콘</image:title>
-      <image:caption>Cozit 로고</image:caption>
+      <image:loc>http://demonst.vercel.app/favicon.ico</image:loc>
+      <image:title>demonst 로고 아이콘</image:title>
+      <image:caption>demonst 로고</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://image.thum.io/get/width/1280/crop/800/noanimate/http://demonst.vercel.app</image:loc>
+      <image:title>demonst 갤러리 스크린샷 #2</image:title>
+      <image:caption>인디 메이커 앱 테스트 &amp; 런치패드</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://image.thum.io/get/width/480/crop/854/noanimate/http://demonst.vercel.app</image:loc>
+      <image:title>demonst 갤러리 스크린샷 #3</image:title>
+      <image:caption>인디 메이커 앱 테스트 &amp; 런치패드</image:caption>
     </image:image>
   </url>
   <url>
@@ -52,7 +62,7 @@
       <image:caption>중학생 개발자 Hyun이 만든 전국 초·중·고교생을 위한 필수 학교 생활 도우미.</image:caption>
     </image:image>
     <image:image>
-      <image:loc>https://www.google.com/s2/favicons?domain=schoolecho.base44.app&amp;sz=256</image:loc>
+      <image:loc>https://media.base44.com/images/public/6aa3c992c70511d2f2a7de18/87f66421f_2026-09-11190505.png</image:loc>
       <image:title>SchoolEcho 로고 아이콘</image:title>
       <image:caption>SchoolEcho 로고</image:caption>
     </image:image>
@@ -101,26 +111,64 @@
     </image:image>
   </url>
   <url>
+    <loc>https://demonst.vercel.app/?product=app-1794915128902</loc>
+    <image:image>
+      <image:loc>https://cozit.app/opengraph-image?f62f20ded988df22</image:loc>
+      <image:title>Cozit 대표 스크린샷</image:title>
+      <image:caption>Meet users. Build together.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://cozit.app/favicon.ico?favicon.2o7utyby3rtrj.ico</image:loc>
+      <image:title>Cozit 로고 아이콘</image:title>
+      <image:caption>Cozit 로고</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?product=app-1795245987283</loc>
+    <image:image>
+      <image:loc>https://english.oilater.com/og?v=f085b25</image:loc>
+      <image:title>줍줍영어 대표 스크린샷</image:title>
+      <image:caption>노션 대신 가볍게 복습하는 무료 영어회화 표현 노트 웹앱</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://english.oilater.com/icon.png?4ccaf1fdc4e3d89c</image:loc>
+      <image:title>줍줍영어 로고 아이콘</image:title>
+      <image:caption>줍줍영어 로고</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://english.oilater.com/_next/image?url=%2Flanding%2Fexpressions.webp&amp;w=3840&amp;q=75</image:loc>
+      <image:title>줍줍영어 갤러리 스크린샷 #2</image:title>
+      <image:caption>노션 대신 가볍게 복습하는 무료 영어회화 표현 노트 웹앱</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://image.thum.io/get/width/1280/crop/800/noanimate/https://english.oilater.com</image:loc>
+      <image:title>줍줍영어 갤러리 스크린샷 #3</image:title>
+      <image:caption>노션 대신 가볍게 복습하는 무료 영어회화 표현 노트 웹앱</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://image.thum.io/get/width/480/crop/854/noanimate/https://english.oilater.com</image:loc>
+      <image:title>줍줍영어 갤러리 스크린샷 #4</image:title>
+      <image:caption>노션 대신 가볍게 복습하는 무료 영어회화 표현 노트 웹앱</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://image.thum.io/get/width/1280/crop/800/noanimate/https://english.oilater.com/landing?lang=ko</image:loc>
+      <image:title>줍줍영어 갤러리 스크린샷 #5</image:title>
+      <image:caption>노션 대신 가볍게 복습하는 무료 영어회화 표현 노트 웹앱</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?product=app-1795286051008</loc>
+    <image:image>
+      <image:loc>https://res.cloudinary.com/xi7gmxxu/image/upload/v1795286003/d3o8oyjw6vhckzlvvld4.jpg</image:loc>
+      <image:title>카드세이프 (CardSafe) 로고 아이콘</image:title>
+      <image:caption>카드세이프 (CardSafe) 로고</image:caption>
+    </image:image>
+  </url>
+  <url>
     <loc>https://demonst.vercel.app/?builder=c9cfe311-84b4-45fd-ae02-acce6d28ff0a</loc>
     <image:image>
       <image:loc>https://demonst.vercel.app/demon-mascot.png</image:loc>
       <image:title>Hawon Min 빌더 프로필</image:title>
-      <image:caption>demonst 메이커</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://demonst.vercel.app/?builder=b42f02d8-9177-481e-92b5-975b1b481c39</loc>
-    <image:image>
-      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocK8Q8sCthWb-mQ4tHCmaZmI0IAZ_7DGJWvAHUYN0GelFKHDINI=s96-c</image:loc>
-      <image:title>New Era 404 빌더 프로필</image:title>
-      <image:caption>demonst 메이커</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://demonst.vercel.app/?builder=277b1372-2429-46a8-87ce-56749ca20257</loc>
-    <image:image>
-      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocJzl50FaYUjrS0mZrejeWLm-XicXO7TGJC16-xZoBiN48dLcJw=s96-c</image:loc>
-      <image:title>서민아 (PrevitLAB) 빌더 프로필</image:title>
       <image:caption>demonst 메이커</image:caption>
     </image:image>
   </url>
@@ -133,10 +181,34 @@
     </image:image>
   </url>
   <url>
-    <loc>https://demonst.vercel.app/?builder=5baa0db7-208a-4890-8c74-5eb46874e83e</loc>
+    <loc>https://demonst.vercel.app/?builder=277b1372-2429-46a8-87ce-56749ca20257</loc>
     <image:image>
-      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocJid_qTs97_JwVShvegPA6qNattLexgeBGBuyOze-8dzhsLxv8=s96-c</image:loc>
-      <image:title>킴호박고구마 빌더 프로필</image:title>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocJzl50FaYUjrS0mZrejeWLm-XicXO7TGJC16-xZoBiN48dLcJw=s96-c</image:loc>
+      <image:title>서민아 (PrevitLAB) 빌더 프로필</image:title>
+      <image:caption>demonst 메이커</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=b42f02d8-9177-481e-92b5-975b1b481c39</loc>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocK8Q8sCthWb-mQ4tHCmaZmI0IAZ_7DGJWvAHUYN0GelFKHDINI=s96-c</image:loc>
+      <image:title>New Era 404 빌더 프로필</image:title>
+      <image:caption>demonst 메이커</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=89c8b540-bac8-4c1d-89f4-391bb021d1e9</loc>
+    <image:image>
+      <image:loc>https://demonst.vercel.app/demon-mascot.png</image:loc>
+      <image:title>tester14480 빌더 프로필</image:title>
+      <image:caption>인디 메이커</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=88b7496b-d6c8-441b-b327-01a334b41413</loc>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocJChXL2__M5TBy4NXMgJqcF3N9U0U4iAuUfbYs0AwlRXxua4wU=s96-c</image:loc>
+      <image:title>김태준 빌더 프로필</image:title>
       <image:caption>demonst 메이커</image:caption>
     </image:image>
   </url>
@@ -149,6 +221,22 @@
     </image:image>
   </url>
   <url>
+    <loc>https://demonst.vercel.app/?builder=5baa0db7-208a-4890-8c74-5eb46874e83e</loc>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocJid_qTs97_JwVShvegPA6qNattLexgeBGBuyOze-8dzhsLxv8=s96-c</image:loc>
+      <image:title>킴호박고구마 빌더 프로필</image:title>
+      <image:caption>demonst 메이커</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=b4d8a8ba-6923-400c-82e1-0adc0e981612</loc>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocLT6qTkkZ2z5Uk9o73xkICLVOcJHkO_yshCZoqZos2IyyPzzvA=s96-c</image:loc>
+      <image:title>김성현 빌더 프로필</image:title>
+      <image:caption>demonst 메이커</image:caption>
+    </image:image>
+  </url>
+  <url>
     <loc>https://demonst.vercel.app/?builder=a7891563-3766-443f-a51d-59607febed63</loc>
     <image:image>
       <image:loc>https://lh3.googleusercontent.com/a/ACg8ocLggCrPg9ZNm6406VyydoFZM4akABLU22lvRux6LDnVW-UoTq8=s96-c</image:loc>
@@ -157,10 +245,18 @@
     </image:image>
   </url>
   <url>
+    <loc>https://demonst.vercel.app/?builder=c9cefc24-7fc9-4337-b8db-6a9f1c42be64</loc>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocL-kd_obvbBo6V6WeD4EFkiuMu5dEq9BU-ggpKySa1VLeSFFg=s96-c</image:loc>
+      <image:title>슝페이이 빌더 프로필</image:title>
+      <image:caption>카드세이프 운영진</image:caption>
+    </image:image>
+  </url>
+  <url>
     <loc>https://demonst.vercel.app/?builder=dd194096-bb05-4548-9b09-892b3d4da086</loc>
     <image:image>
       <image:loc>https://lh3.googleusercontent.com/a/ACg8ocJmMmiSCxfRMiRoMyPGmnv7Xk1vxtx5Z3toOxI1rwsNPmWFOw=s96-c</image:loc>
-      <image:title>VibeNow 빌더 프로필</image:title>
+      <image:title>ayl42 um 빌더 프로필</image:title>
       <image:caption>1인 앱 개발자</image:caption>
     </image:image>
   </url>
