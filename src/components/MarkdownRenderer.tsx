@@ -26,7 +26,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
           href={match[2]}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-accent underline hover:text-accent-hover font-semibold break-all"
+          className="text-blue-400 hover:text-blue-300 underline font-semibold break-all"
         >
           {match[1]}
         </a>
@@ -58,20 +58,20 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
         nodes.push(
           <code
             key={`code-${m.index}`}
-            className="rounded bg-surface-3 px-1.5 py-0.5 text-[11px] font-mono text-accent font-medium border border-border/60"
+            className="rounded bg-zinc-800/80 px-1.5 py-0.5 text-[11px] font-mono text-blue-300 font-medium border border-zinc-700/60"
           >
             {token.slice(1, -1)}
           </code>
         );
       } else if (token.startsWith('**') && token.endsWith('**')) {
         nodes.push(
-          <strong key={`bold-${m.index}`} className="font-bold text-fg">
+          <strong key={`bold-${m.index}`} className="font-bold text-white">
             {token.slice(2, -2)}
           </strong>
         );
       } else if (token.startsWith('*') && token.endsWith('*')) {
         nodes.push(
-          <em key={`italic-${m.index}`} className="italic text-fg">
+          <em key={`italic-${m.index}`} className="italic text-zinc-200">
             {token.slice(1, -1)}
           </em>
         );
@@ -95,7 +95,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
     if (currentList) {
       if (currentList.type === 'ul') {
         renderedElements.push(
-          <ul key={`ul-${renderedElements.length}`} className="my-2 space-y-1.5 pl-4 list-disc text-xs text-fg-secondary">
+          <ul key={`ul-${renderedElements.length}`} className="my-2 space-y-1.5 pl-4 list-disc text-xs text-zinc-300">
             {currentList.items.map((it, idx) => (
               <li key={idx} className="leading-relaxed">
                 {it}
@@ -105,7 +105,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
         );
       } else {
         renderedElements.push(
-          <ol key={`ol-${renderedElements.length}`} className="my-2 space-y-1.5 pl-4 list-decimal text-xs text-fg-secondary">
+          <ol key={`ol-${renderedElements.length}`} className="my-2 space-y-1.5 pl-4 list-decimal text-xs text-zinc-300">
             {currentList.items.map((it, idx) => (
               <li key={idx} className="leading-relaxed">
                 {it}
@@ -133,7 +133,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
       renderedElements.push(
         <h4
           key={`h3-${index}`}
-          className="text-sm font-bold text-fg mt-4 mb-2 flex items-center gap-1.5 border-b border-border/50 pb-1"
+          className="text-sm font-bold text-white mt-4 mb-2 flex items-center gap-1.5 border-b border-zinc-800 pb-1"
         >
           {renderInline(headerText)}
         </h4>
@@ -148,7 +148,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
       renderedElements.push(
         <h3
           key={`h2-${index}`}
-          className="text-base font-bold text-fg mt-5 mb-2.5 pb-1 border-b border-border"
+          className="text-base font-bold text-white mt-5 mb-2.5 pb-1 border-b border-zinc-800"
         >
           {renderInline(headerText)}
         </h3>
@@ -163,7 +163,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
       renderedElements.push(
         <h2
           key={`h1-${index}`}
-          className="text-lg font-bold text-fg mt-6 mb-3"
+          className="text-lg font-bold text-white mt-6 mb-3"
         >
           {renderInline(headerText)}
         </h2>
@@ -197,7 +197,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
     // Regular paragraph
     flushList();
     renderedElements.push(
-      <p key={`p-${index}`} className="my-1.5 text-xs text-fg-secondary leading-relaxed">
+      <p key={`p-${index}`} className="my-1.5 text-xs text-zinc-300 leading-relaxed">
         {renderInline(trimmed)}
       </p>
     );

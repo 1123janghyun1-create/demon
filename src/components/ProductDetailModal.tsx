@@ -278,13 +278,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
     }
   }, [product?.id, incrementProductViews]);
 
-  // Check if current user is author
+  // Check if current user is author (Strict: only unique ID or verified email, NEVER by display name!)
   const isAuthor =
     user.isLoggedIn &&
     Boolean(
-      (product.authorId && product.authorId === user.id) ||
+      (product.authorId && user.id && product.authorId === user.id) ||
       (product.authorEmail && user.email && product.authorEmail.toLowerCase() === user.email.toLowerCase()) ||
-      (user.email && (product.authorId === user.email || product.author === user.email))
+      (user.email && product.authorId && product.authorId.toLowerCase() === user.email.toLowerCase())
     );
 
   // 3-Day Cooldown Constants
@@ -444,7 +444,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/75 backdrop-blur-xs overflow-y-auto">
       <div
-        className="relative w-full max-w-[780px] max-h-[92vh] overflow-y-auto rounded-2xl border border-zinc-800 bg-[#0B0F17] text-zinc-100 shadow-2xl transition-all"
+        className="dark relative w-full max-w-[780px] max-h-[92vh] overflow-y-auto rounded-2xl border border-zinc-800 bg-[#0B0F17] text-zinc-100 shadow-2xl transition-all"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Floating Control Bar */}

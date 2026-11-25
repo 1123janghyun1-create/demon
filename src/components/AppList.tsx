@@ -103,13 +103,12 @@ export const AppList: React.FC = () => {
           </div>
         ) : (
           filteredProducts.map((product) => {
-            // Strictly check if current logged-in user is the author/owner
+            // Strictly check if current logged-in user is the author/owner (Unique ID or verified email ONLY - never by display name!)
             const isAuthor = Boolean(
               user.isLoggedIn && (
-                (product.authorId && product.authorId === user.id) ||
+                (product.authorId && user.id && product.authorId === user.id) ||
                 (product.authorEmail && user.email && product.authorEmail.toLowerCase() === user.email.toLowerCase()) ||
-                (user.email && (product.authorId === user.email || product.author === user.email)) ||
-                (product.author && user.name && product.author === user.name)
+                (user.email && product.authorId && product.authorId.toLowerCase() === user.email.toLowerCase())
               )
             );
 

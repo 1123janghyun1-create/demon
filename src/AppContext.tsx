@@ -556,6 +556,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
 
+  const [hasInitializedUrlProductRef, setHasInitializedUrlProductRef] = useState(false);
+
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -574,10 +576,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (builderParam) {
         setCurrentTab('builders');
       }
-    } catch {}
+      setHasInitializedUrlProductRef(true);
+    } catch {
+      setHasInitializedUrlProductRef(true);
+    }
   }, [products]);
 
   useEffect(() => {
+    // Only update window history after initial URL param parsing has completed!
+    if (!hasInitializedUrlProductRef) return;
     try {
       const url = new URL(window.location.href);
       if (selectedProduct) {
@@ -587,7 +594,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       window.history.replaceState(null, '', url.toString());
     } catch {}
-  }, [selectedProduct]);
+  }, [selectedProduct, hasInitializedUrlProductRef]);
 
   // Sync Supabase Database / Server API to Local State on App Startup (with Smart Merge & Fallback)
   useEffect(() => {
@@ -1802,9 +1809,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const prod = products.find((p) => p.id === productId || p.slug === productId);
       const isMaker = Boolean(
         prod &&
-          ((prod.authorId && prod.authorId === user.id) ||
+          ((prod.authorId && user.id && prod.authorId === user.id) ||
             (prod.authorEmail && user.email && prod.authorEmail.toLowerCase() === user.email.toLowerCase()) ||
-            (prod.author && user.name && prod.author === user.name))
+            (user.email && prod.authorId && prod.authorId.toLowerCase() === user.email.toLowerCase()))
       );
 
       const newReply: FeedbackReply = {
@@ -1956,8 +1963,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return created;
   };
 
-  // Update Product (Local + Supabase DB)
+  // Update Product (Local + Supabase DB with strict author check)
   const updateProduct = (updated: Product) => {
+    // Strict author verification
+    const isOwner = Boolean(
+      user.isLoggedIn && (
+        (updated.authorId && user.id && updated.authorId === user.id) ||
+        (updated.authorEmail && user.email && updated.authorEmail.toLowerCase() === user.email.toLowerCase()) ||
+        (user.email && updated.authorId && updated.authorId.toLowerCase() === user.email.toLowerCase())
+      )
+    );
+
+    if (!isOwner) {
+      showToast('❌ 자신이 등록한 제품만 수정할 수 있습니다.');
+      return;
+    }
     setProducts((prev) => {
       const next = prev.map((p) => (p.id === updated.id ? updated : p));
       try {
@@ -1975,10 +1995,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('✨ 제품 정보가 성공적으로 수정되었습니다!');
   };
 
-  // Bump / Boost Product to Top (3-day cooldown per product)
+  // Bump / Boost Product to Top (3-day cooldown per product & strict author check)
   const bumpProduct = async (productId: string): Promise<boolean> => {
     const targetProduct = products.find((p) => p.id === productId);
     if (!targetProduct) return false;
+
+    // Strict author verification: only the actual owner can bump their product!
+    const isOwner = Boolean(
+      user.isLoggedIn && (
+        (targetProduct.authorId && user.id && targetProduct.authorId === user.id) ||
+        (targetProduct.authorEmail && user.email && targetProduct.authorEmail.toLowerCase() === user.email.toLowerCase()) ||
+        (user.email && targetProduct.authorId && targetProduct.authorId.toLowerCase() === user.email.toLowerCase())
+      )
+    );
+
+    if (!isOwner) {
+      showToast('❌ 자신이 등록한 제품만 상단으로 끌어올릴 수 있습니다.');
+      return false;
+    }
 
     // Verify 3-day cooldown (3 days = 259,200,000 ms)
     const COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000;
@@ -2023,12 +2057,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
-  // Delete Product (Local + Supabase DB + Persistent Tombstone Blacklist)
+  // Delete Product (Local + Supabase DB + Persistent Tombstone Blacklist with strict author check)
   const deleteProduct = (productId: string) => {
     // 1. Identify product and all its aliases (id + slug)
     const target = products.find((p) => p.id === productId || p.slug === productId);
-    const idToDelete = target?.id || productId;
-    const slugToDelete = target?.slug;
+    if (!target) return;
+
+    // Strict author verification
+    const isOwner = Boolean(
+      user.isLoggedIn && (
+        (target.authorId && user.id && target.authorId === user.id) ||
+        (target.authorEmail && user.email && target.authorEmail.toLowerCase() === user.email.toLowerCase()) ||
+        (user.email && target.authorId && target.authorId.toLowerCase() === user.email.toLowerCase())
+      )
+    );
+
+    if (!isOwner) {
+      showToast('❌ 자신이 등록한 제품만 삭제할 수 있습니다.');
+      return;
+    }
+
+    const idToDelete = target.id || productId;
+    const slugToDelete = target.slug;
 
     // 2. Record to persistent deleted IDs blacklist so it NEVER resurrects!
     try {
