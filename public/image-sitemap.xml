@@ -32,6 +32,29 @@
     </image:image>
   </url>
   <url>
+    <loc>https://demonst.vercel.app/?product=app-1795503632914</loc>
+    <image:image>
+      <image:loc>https://image.thum.io/get/width/480/crop/854/noanimate/https://hawonmin.base44.app</image:loc>
+      <image:title>NEON SPIRE 대표 스크린샷</image:title>
+      <image:caption>2D Canvas Platformer</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://res.cloudinary.com/xi7gmxxu/image/upload/v1795503688/ng1smkcifadsrcncr6ng.png</image:loc>
+      <image:title>NEON SPIRE 로고 아이콘</image:title>
+      <image:caption>NEON SPIRE 로고</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://res.cloudinary.com/xi7gmxxu/image/upload/v1795503574/owg5uythrdi1c9didk4e.jpg</image:loc>
+      <image:title>NEON SPIRE 갤러리 스크린샷 #2</image:title>
+      <image:caption>2D Canvas Platformer</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://res.cloudinary.com/xi7gmxxu/image/upload/v1795503601/ppng7rhja5nz8yrxkojq.png</image:loc>
+      <image:title>NEON SPIRE 갤러리 스크린샷 #3</image:title>
+      <image:caption>2D Canvas Platformer</image:caption>
+    </image:image>
+  </url>
+  <url>
     <loc>https://demonst.vercel.app/?product=app-1794472799159</loc>
     <image:image>
       <image:loc>https://res.cloudinary.com/xi7gmxxu/image/upload/v1794472329/sukklaeg1didkuqnuwgt.png</image:loc>
@@ -52,6 +75,34 @@
       <image:loc>https://res.cloudinary.com/xi7gmxxu/image/upload/v1794472418/cn7bdkmbrmeoh8zduscd.png</image:loc>
       <image:title>우리집 모아성 갤러리 스크린샷 #3</image:title>
       <image:caption>집안일을 눈에 보이게 하는 방법</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?product=app-1795504890425</loc>
+    <image:image>
+      <image:loc>https://atelierlaunch.kr/og-residents.png</image:loc>
+      <image:title>Atelier Lanucn | 가상 주민 대표 스크린샷</image:title>
+      <image:caption>Atelier Launch</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://atelierlaunch.kr/favicon.svg</image:loc>
+      <image:title>Atelier Lanucn | 가상 주민 로고 아이콘</image:title>
+      <image:caption>Atelier Lanucn | 가상 주민 로고</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://image.thum.io/get/width/1280/crop/800/noanimate/https://atelierlaunch.kr/residents</image:loc>
+      <image:title>Atelier Lanucn | 가상 주민 갤러리 스크린샷 #2</image:title>
+      <image:caption>Atelier Launch</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://image.thum.io/get/width/480/crop/854/noanimate/https://atelierlaunch.kr/residents</image:loc>
+      <image:title>Atelier Lanucn | 가상 주민 갤러리 스크린샷 #3</image:title>
+      <image:caption>Atelier Launch</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://image.thum.io/get/width/1280/crop/800/noanimate/https://atelierlaunch.kr/method</image:loc>
+      <image:title>Atelier Lanucn | 가상 주민 갤러리 스크린샷 #4</image:title>
+      <image:caption>Atelier Launch</image:caption>
     </image:image>
   </url>
   <url>
@@ -111,6 +162,39 @@
     </image:image>
   </url>
   <url>
+    <loc>https://demonst.vercel.app/?product=app-1795476489048</loc>
+    <image:image>
+      <image:loc>https://novastart.com/og.png</image:loc>
+      <image:title>Novastart - The Infinite Canvas OS 대표 스크린샷</image:title>
+      <image:caption>Novastart는 앱과 파일을 무한 캔버스로 가져와 사람과 AI 에이전트가 함께 일할 수 있게 합니다.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://novastart.com/favicon.ico</image:loc>
+      <image:title>Novastart - The Infinite Canvas OS 로고 아이콘</image:title>
+      <image:caption>Novastart - The Infinite Canvas OS 로고</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://novastart.com/icons/apps/claude-desktop.png</image:loc>
+      <image:title>Novastart - The Infinite Canvas OS 갤러리 스크린샷 #2</image:title>
+      <image:caption>Novastart는 앱과 파일을 무한 캔버스로 가져와 사람과 AI 에이전트가 함께 일할 수 있게 합니다.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://image.thum.io/get/width/1280/crop/800/noanimate/https://novastart.com/</image:loc>
+      <image:title>Novastart - The Infinite Canvas OS 갤러리 스크린샷 #3</image:title>
+      <image:caption>Novastart는 앱과 파일을 무한 캔버스로 가져와 사람과 AI 에이전트가 함께 일할 수 있게 합니다.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://image.thum.io/get/width/480/crop/854/noanimate/https://novastart.com/</image:loc>
+      <image:title>Novastart - The Infinite Canvas OS 갤러리 스크린샷 #4</image:title>
+      <image:caption>Novastart는 앱과 파일을 무한 캔버스로 가져와 사람과 AI 에이전트가 함께 일할 수 있게 합니다.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://image.thum.io/get/width/1280/crop/800/noanimate/https://novastart.com/blog/what-is-endless-paper-how-the-infinite-canvas-drawing-app-works</image:loc>
+      <image:title>Novastart - The Infinite Canvas OS 갤러리 스크린샷 #5</image:title>
+      <image:caption>Novastart는 앱과 파일을 무한 캔버스로 가져와 사람과 AI 에이전트가 함께 일할 수 있게 합니다.</image:caption>
+    </image:image>
+  </url>
+  <url>
     <loc>https://demonst.vercel.app/?product=app-1794915128902</loc>
     <image:image>
       <image:loc>https://cozit.app/opengraph-image?f62f20ded988df22</image:loc>
@@ -121,6 +205,42 @@
       <image:loc>https://cozit.app/favicon.ico?favicon.2o7utyby3rtrj.ico</image:loc>
       <image:title>Cozit 로고 아이콘</image:title>
       <image:caption>Cozit 로고</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?product=app-1795497588791</loc>
+    <image:image>
+      <image:loc>https://res.cloudinary.com/xi7gmxxu/image/upload/v1795497555/bgaqqw9vmzmxwmb5bunx.png</image:loc>
+      <image:title>Donevio(던비오) 대표 스크린샷</image:title>
+      <image:caption>코드를 리뷰해 줄 개발자가 없는 1인 창업자를 위해, AI로 만든 서비스를 출시 전에 검증합니다.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://donevio.io/favicon.ico</image:loc>
+      <image:title>Donevio(던비오) 로고 아이콘</image:title>
+      <image:caption>Donevio(던비오) 로고</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://res.cloudinary.com/xi7gmxxu/image/upload/v1795497552/rl6mk4itsjfzqtkdjcdy.png</image:loc>
+      <image:title>Donevio(던비오) 갤러리 스크린샷 #2</image:title>
+      <image:caption>코드를 리뷰해 줄 개발자가 없는 1인 창업자를 위해, AI로 만든 서비스를 출시 전에 검증합니다.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://res.cloudinary.com/xi7gmxxu/image/upload/v1795497551/t8lqtadcye23tqk5bxbt.png</image:loc>
+      <image:title>Donevio(던비오) 갤러리 스크린샷 #3</image:title>
+      <image:caption>코드를 리뷰해 줄 개발자가 없는 1인 창업자를 위해, AI로 만든 서비스를 출시 전에 검증합니다.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://res.cloudinary.com/xi7gmxxu/image/upload/v1795497554/mwxytlxq5dn148u217xz.png</image:loc>
+      <image:title>Donevio(던비오) 갤러리 스크린샷 #4</image:title>
+      <image:caption>코드를 리뷰해 줄 개발자가 없는 1인 창업자를 위해, AI로 만든 서비스를 출시 전에 검증합니다.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?product=app-1795286051008</loc>
+    <image:image>
+      <image:loc>https://res.cloudinary.com/xi7gmxxu/image/upload/v1795286003/d3o8oyjw6vhckzlvvld4.jpg</image:loc>
+      <image:title>카드세이프 (CardSafe) 로고 아이콘</image:title>
+      <image:caption>카드세이프 (CardSafe) 로고</image:caption>
     </image:image>
   </url>
   <url>
@@ -157,42 +277,10 @@
     </image:image>
   </url>
   <url>
-    <loc>https://demonst.vercel.app/?product=app-1795286051008</loc>
-    <image:image>
-      <image:loc>https://res.cloudinary.com/xi7gmxxu/image/upload/v1795286003/d3o8oyjw6vhckzlvvld4.jpg</image:loc>
-      <image:title>카드세이프 (CardSafe) 로고 아이콘</image:title>
-      <image:caption>카드세이프 (CardSafe) 로고</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://demonst.vercel.app/?builder=c9cfe311-84b4-45fd-ae02-acce6d28ff0a</loc>
     <image:image>
       <image:loc>https://demonst.vercel.app/demon-mascot.png</image:loc>
       <image:title>Hawon Min 빌더 프로필</image:title>
-      <image:caption>demonst 메이커</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://demonst.vercel.app/?builder=0ad5aa4c-c1e4-4a27-b750-051369fa04ab</loc>
-    <image:image>
-      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocKIY-OfEnQ35IPnWavrvY7cg2tiOZ7uaurnvM-14uCHAvvXQQ=s96-c</image:loc>
-      <image:title>장현 빌더 프로필</image:title>
-      <image:caption>demonst 메이커</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://demonst.vercel.app/?builder=277b1372-2429-46a8-87ce-56749ca20257</loc>
-    <image:image>
-      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocJzl50FaYUjrS0mZrejeWLm-XicXO7TGJC16-xZoBiN48dLcJw=s96-c</image:loc>
-      <image:title>서민아 (PrevitLAB) 빌더 프로필</image:title>
-      <image:caption>demonst 메이커</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://demonst.vercel.app/?builder=b42f02d8-9177-481e-92b5-975b1b481c39</loc>
-    <image:image>
-      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocK8Q8sCthWb-mQ4tHCmaZmI0IAZ_7DGJWvAHUYN0GelFKHDINI=s96-c</image:loc>
-      <image:title>New Era 404 빌더 프로필</image:title>
       <image:caption>demonst 메이커</image:caption>
     </image:image>
   </url>
@@ -213,10 +301,42 @@
     </image:image>
   </url>
   <url>
-    <loc>https://demonst.vercel.app/?builder=c5bc1402-fd9d-460e-aec9-d7bfe2149be2</loc>
+    <loc>https://demonst.vercel.app/?builder=b51b3a97-6bae-4494-82f9-fa22ec7e2831</loc>
     <image:image>
-      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocIQsIwUzNbrHi7oLcV2Ea-k_7UrxGXr0kpX2hdwWZ5CayYlYQ=s96-c</image:loc>
-      <image:title>summer aiyi 빌더 프로필</image:title>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocIpmFEussb28d0R-3WJFhgryItV-807USVzPIyxOsffSmW-Ed5l=s96-c</image:loc>
+      <image:title>정시원 빌더 프로필</image:title>
+      <image:caption>demonst 메이커</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=277b1372-2429-46a8-87ce-56749ca20257</loc>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocJzl50FaYUjrS0mZrejeWLm-XicXO7TGJC16-xZoBiN48dLcJw=s96-c</image:loc>
+      <image:title>서민아 (PrevitLAB) 빌더 프로필</image:title>
+      <image:caption>demonst 메이커</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=b42f02d8-9177-481e-92b5-975b1b481c39</loc>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocK8Q8sCthWb-mQ4tHCmaZmI0IAZ_7DGJWvAHUYN0GelFKHDINI=s96-c</image:loc>
+      <image:title>New Era 404 빌더 프로필</image:title>
+      <image:caption>demonst 메이커</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=0ad5aa4c-c1e4-4a27-b750-051369fa04ab</loc>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocKIY-OfEnQ35IPnWavrvY7cg2tiOZ7uaurnvM-14uCHAvvXQQ=s96-c</image:loc>
+      <image:title>장현 빌더 프로필</image:title>
+      <image:caption>demonst 메이커</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=6fb0bfe0-4bcb-487b-8067-8784c284a20b</loc>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocKqA4XZVw-3sNff46q88Z5-pzakuSDB3pk-r8velLyv1Lg-kg=s96-c</image:loc>
+      <image:title>Nova Start 빌더 프로필</image:title>
       <image:caption>demonst 메이커</image:caption>
     </image:image>
   </url>
@@ -225,6 +345,14 @@
     <image:image>
       <image:loc>https://lh3.googleusercontent.com/a/ACg8ocJid_qTs97_JwVShvegPA6qNattLexgeBGBuyOze-8dzhsLxv8=s96-c</image:loc>
       <image:title>킴호박고구마 빌더 프로필</image:title>
+      <image:caption>demonst 메이커</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=c5bc1402-fd9d-460e-aec9-d7bfe2149be2</loc>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocIQsIwUzNbrHi7oLcV2Ea-k_7UrxGXr0kpX2hdwWZ5CayYlYQ=s96-c</image:loc>
+      <image:title>summer aiyi 빌더 프로필</image:title>
       <image:caption>demonst 메이커</image:caption>
     </image:image>
   </url>
@@ -258,6 +386,22 @@
       <image:loc>https://lh3.googleusercontent.com/a/ACg8ocJmMmiSCxfRMiRoMyPGmnv7Xk1vxtx5Z3toOxI1rwsNPmWFOw=s96-c</image:loc>
       <image:title>ayl42 um 빌더 프로필</image:title>
       <image:caption>1인 앱 개발자</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=916b0aa4-113f-47a7-9c4e-30c1321e2fd3</loc>
+    <image:image>
+      <image:loc>https://res.cloudinary.com/xi7gmxxu/image/upload/v1795497370/rd2kt278ljnyijglpnmx.png</image:loc>
+      <image:title>Team donevio 빌더 프로필</image:title>
+      <image:caption>ceo</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://demonst.vercel.app/?builder=4bd1c9cb-f76a-407e-8925-3f96cbbcfae1</loc>
+    <image:image>
+      <image:loc>https://lh3.googleusercontent.com/a/ACg8ocI9d9x5MvTPnYCFSKBbXr73xKKrnxibJurW8VpX1ruCzYyABA=s96-c</image:loc>
+      <image:title>atlier 빌더 프로필</image:title>
+      <image:caption>1인 개발자</image:caption>
     </image:image>
   </url>
   <url>
